@@ -1,67 +1,10 @@
-<script>
-const API_URL = "https://script.google.com/macros/s/AKfycby4QCiHE9BI496qmBwY7-ZnCFKUSkV1UPBXegu8xAnq18s4kFfgIBLCVaZtum585K6IUQ/exec";
-
-function toggleSector() {
-  const toggle = document.getElementById("sectorToggle").value;
-  document.getElementById("sector").disabled = toggle !== "one";
-}
-
-async function generarReporte() {
-  const periodo = document.getElementById("periodo").value;
-  const sectorToggle = document.getElementById("sectorToggle").value;
-  const sector = document.getElementById("sector").value;
-  const box = document.getElementById("resultado");
-
-  box.innerHTML = "";
-
-  if (!periodo) {
-    box.innerHTML = "<div class='alert-yellow'>Seleccioná un período.</div>";
-    return;
-  }
-
-  try {
-    box.innerHTML = "<p>⏳ Cargando datos reales...</p>";
-
-    const res = await fetch(API_URL);
-    if (!res.ok) throw new Error("Error al consultar Google Script");
-
-    const data = await res.json();
-
-    if (!Array.isArray(data) || data.length === 0) {
-      box.innerHTML = "<p class='ok'>✔ No hay datos para el período seleccionado.</p>";
-      return;
-    }
-
-    box.innerHTML = `
-      <p>📊 Reporte últimos <strong>${periodo} días</strong></p>
-      <p>📍 Sector: <strong>${sectorToggle === "one" ? sector : "Toda la sucursal"}</strong></p>
-    `;
-
-    let alertas = 0;
-
-    data.forEach(row => {
-      if (Number(row.Cantidad) >= 24) {
-        alertas++;
-        box.innerHTML += `
-          <div class="alert-red">
-            🔴 ${row.Descripcion_pro} – ${row.Cantidad} ${row.Unidad}
-          </div>
-        `;
-      }
-    });
-
-    if (alertas === 0) {
-      box.innerHTML += "<p class='ok'>✔ No se detectaron alertas.</p>";
-    }
-
-  } catch (err) {
-    console.error(err);
-    box.innerHTML = `
-      <div class="alert-red">
-        ❌ Error cargando datos reales.<br>
-        Revisá la URL del Google Script o permisos.
-      </div>
-    `;
-  }
-}
-</script>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>TEST</title>
+</head>
+<body style="background:black;color:white;font-size:30px">
+  FUNCIONA NETLIFY
+</body>
+</html>
