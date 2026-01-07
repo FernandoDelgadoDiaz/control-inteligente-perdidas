@@ -2,44 +2,33 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Control Inteligente de Pérdidas – RAG & Donaciones</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-body {
+body{
   margin:0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background: linear-gradient(180deg,#050b1e,#020617);
-  color:#fff;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto;
+  background:linear-gradient(180deg,#020617,#020617 60%,#020617);
+  color:#e5e7eb;
 }
-.container {
-  max-width:760px;
-  margin:auto;
-  padding:20px;
+.container{max-width:480px;margin:auto;padding:20px}
+h1{font-size:22px;margin-bottom:16px}
+select,button{
+  width:100%;padding:14px;border-radius:12px;
+  border:none;font-size:16px;margin-bottom:12px
 }
-h1 { font-size:1.6rem; margin-bottom:16px; }
-select, button {
-  width:100%;
-  padding:14px;
-  margin-bottom:12px;
-  border-radius:12px;
-  border:none;
-  font-size:1rem;
+button{background:#3b82f6;color:#fff;font-weight:600}
+.card{
+  background:linear-gradient(180deg,#020617,#020617);
+  border-radius:16px;padding:16px;margin:12px 0;
+  box-shadow:0 10px 30px rgba(0,0,0,.4)
 }
-button {
-  background:#3b82f6;
-  color:#fff;
-}
-.card {
-  background:rgba(255,255,255,.05);
-  border-radius:16px;
-  padding:16px;
-  margin-bottom:14px;
-}
-.alert { border-left:6px solid #ef4444; }
-.rank { border-left:6px solid #22c55e; }
-.title { font-weight:700; margin-bottom:6px; }
-.muted { opacity:.7; font-size:.9rem; }
+.alert{border-left:6px solid #ef4444}
+.warn{border-left:6px solid #facc15}
+.rank{border-left:6px solid #22c55e}
+.title{font-weight:700;margin-bottom:6px}
+.muted{opacity:.7;font-size:14px}
 </style>
 </head>
 
@@ -59,82 +48,82 @@ button {
   <option value="ALL">Toda la sucursal</option>
 </select>
 
-<button id="btn">Generar reporte</button>
+<button onclick="generar()">Generar reporte</button>
 
 <div id="out"></div>
 
 </div>
 
 <script>
-const API = "/.netlify/functions/getEventos";
-const out = document.getElementById("out");
-const btn = document.getElementById("btn");
-const diasSel = document.getElementById("dias");
-const sectorSel = document.getElementById("sector");
+const API_URL = "https://script.google.com/macros/s/AKfycbxakcoust-d-geI214--f4NJy8C_VR0Dm5IYVbE_JRgHnMvE-wnZTSjQdxb3SzeDLICSQ/exec";
 
-btn.onclick = cargar;
-
-async function cargar(){
-  out.innerHTML = "Cargando…";
-  btn.disabled = true;
-
-  const dias = diasSel.value;
-  const sector = sectorSel.value;
-
-  const res = await fetch(`${API}?dias=${dias}&sector=${sector}`);
-  const data = await res.json();
-
-  render(data);
-  btn.disabled = false;
+function generar(){
+  const dias=document.getElementById("dias").value;
+  const sector=document.getElementById("sector").value;
+  fetch(`${API_URL}?dias=${dias}&sector=${sector}`)
+    .then(r=>r.json())
+    .then(render);
 }
 
 function render(data){
-  out.innerHTML = "";
+  const out=document.getElementById("out");
+  out.innerHTML="";
 
-  // Sectores
-  if (data.sectores?.length){
-    sectorSel.innerHTML = `<option value="ALL">Toda la sucursal</option>`;
+  if(data.error){
+    out.innerHTML=`<div class="card alert">${data.error}</div>`;
+    return;
+  }
+
+  // sectores
+  const sel=document.getElementById("sector");
+  if(sel.options.length===1){
     data.sectores.forEach(s=>{
-      sectorSel.innerHTML += `<option value="${s}">${s}</option>`;
+      const o=document.createElement("option");
+      o.value=s;o.text=s;sel.appendChild(o);
     });
   }
 
-  // RESUMEN
-  out.innerHTML += `
-    <div class="card">
-      <div class="title">Resumen (${data.resumen.dias} días)</div>
-      Sector: ${data.resumen.sector}
-      ${data.mas_donado ? `<br><b>Producto más donado:</b> ${data.mas_donado.producto}` : ""}
-      ${data.mas_rag_eventos ? `<br><b>Producto más en RAG (eventos):</b> ${data.mas_rag_eventos.producto}` : ""}
-      ${data.mas_rag_cantidad ? `<br><b>Producto más en RAG (cantidad):</b> ${data.mas_rag_cantidad.producto}` : ""}
-    </div>
-  `;
+  // resumen
+  out.innerHTML+=`
+  <div class="card">
+    <div class="title">Resumen (${data.resumen.dias} días)</div>
+    Sector: ${data.resumen.sector}<br><br>
+    <b>Producto más donado:</b> ${data.mas_donado?.producto||"—"}<br>
+    <b>Producto más en RAG (eventos):</b> ${data.mas_rag_eventos?.producto||"—"}<br>
+    <b>Producto más en RAG (cantidad):</b> ${data.mas_rag_cantidad?.producto||"—"}
+  </div>`;
 
-  // ALERTAS (solo eventos, sin ranking)
+  // eventos
   data.ranking.forEach(p=>{
-    out.innerHTML += `
-      <div class="card alert">
-        <div class="title">${p.producto} (${p.sku})</div>
-        Evento máx: 1<br>
-        Acumulado: ${p.acumulado}
-      </div>
-    `;
+    const acumulado=Number(p.acumulado);
+    const umbral=10;
+
+    let clase="card";
+    if(acumulado>=umbral) clase+=" alert";
+    else if(acumulado>=umbral*0.8) clase+=" warn";
+
+    out.innerHTML+=`
+    <div class="${clase}">
+      <div class="title">${p.producto} (${p.sku})</div>
+      Evento máx: 1<br>
+      Acumulado: ${acumulado}
+    </div>`;
   });
 
-  // RANKING
-  out.innerHTML += `
-    <div class="card rank">
-      <div class="title">Ranking de impacto</div>
-      <div class="muted">Ordenado por cantidad total (kg y unidades no normalizados)</div>
-    </div>
-  `;
+  // ranking correcto
+  const rankingOrdenado=[...data.ranking]
+    .map(p=>({...p,acumulado:Number(p.acumulado)}))
+    .sort((a,b)=>b.acumulado-a.acumulado);
 
-  data.ranking.forEach((p,i)=>{
-    out.innerHTML += `
-      <div class="card">
-        ${i+1}. ${p.producto} – ${p.acumulado}
-      </div>
-    `;
+  out.innerHTML+=`
+  <div class="card rank">
+    <div class="title">Ranking de impacto</div>
+    <div class="muted">Ordenado por cantidad total</div>
+  </div>`;
+
+  rankingOrdenado.forEach((p,i)=>{
+    out.innerHTML+=`
+    <div class="card">${i+1}. ${p.producto} – ${p.acumulado}</div>`;
   });
 }
 </script>
