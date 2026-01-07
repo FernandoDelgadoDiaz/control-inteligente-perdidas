@@ -1,57 +1,59 @@
-const fetch = require("node-fetch");
+/**
+ * Netlify Function: getEventos
+ * Lee datos desde Google Sheets vía Google Apps Script
+ * Compatible con Netlify (Node 18+ / Node 22)
+ * NO usa node-fetch
+ * NO requiere package.json
+ */
 
-exports.handler = async (event) => {
+exports.handler = async () => {
   try {
-    const {
-      dias = 30,
-      sector = "ALL",
-      sucursal = "091"
-    } = event.queryStringParameters || {};
+    // 🔴 URL REAL de tu Google Apps Script (ya deployado)
+    const GOOGLE_SHEET_API_URL =
+      "https://script.google.com/macros/s/AKfycbXXXXXXXXXXXXXXX/exec";
 
-    const SHEET_ID = "14Mftuoi14DSFz1z2xBNAui1dSy5bvc3GH5lNWGfrg8Q";
-    const SHEET_NAME = "Eventos_RAG_Donaciones_MASTER";
+    const response = await fetch(GOOGLE_SHEET_API_URL, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}`;
-    const res = await fetch(url);
-    const text = await res.text();
-
-    const json = JSON.parse(text.substring(47).slice(0, -2));
-    const rows = json.table.rows;
-
-    const hoy = new Date();
-    const limite = new Date();
-    limite.setDate(hoy.getDate() - Number(dias));
-
-    const eventos = rows
-      .map(r => ({
-        fecha: new Date(r.c[0]?.v),
-        sucursal: String(r.c[1]?.v || "").trim(),
-        sector: String(r.c[2]?.v || "").trim(),
-        codigo: String(r.c[3]?.v || "").trim(),
-        producto: String(r.c[4]?.v || "").trim(),
-        tipo: String(r.c[5]?.v || "").trim(),
-        cantidad: Number(r.c[6]?.v || 0),
-        unidad: String(r.c[7]?.v || "").trim()
-      }))
-      .filter(e =>
-        e.fecha instanceof Date &&
-        !isNaN(e.fecha) &&
-        e.fecha >= limite &&
-        e.sucursal === sucursal &&
-        (sector === "ALL" || e.sector === sector)
+    if (!response.ok) {
+      throw new Error(
+        `Error al consultar Google Sheets (status ${response.status})`
       );
+    }
+
+    const registros = await response.json();
+
+    // Validación básica (NO inventa datos)
+    if (!Array.isArray(registros)) {
+      throw new Error("La respuesta no es un array válido");
+    }
 
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(eventos)
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
+      body: JSON.stringify({
+        ok: true,
+        total_registros: registros.length,
+        registros: registros,
+      }),
     };
-
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message })
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: JSON.stringify({
+        ok: false,
+        error: error.message,
+      }),
     };
   }
 };
-
