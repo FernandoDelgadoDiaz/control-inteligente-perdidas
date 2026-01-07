@@ -1,123 +1,162 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Control Inteligente de Pérdidas – RAG & Donaciones</title>
+<meta charset="UTF-8">
+<title>Control Inteligente de Pérdidas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <style>
-    body{margin:0;font-family:system-ui;background:linear-gradient(180deg,#050b1a,#0b1533);color:#fff}
-    .container{padding:20px;max-width:900px;margin:auto}
-    h1{font-size:22px;margin-bottom:20px}
-    .filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
-    select,button{padding:10px;border-radius:8px;border:none;background:#121c3d;color:#fff;font-size:14px}
-    button{cursor:pointer;background:#1e88e5}
-    button:hover{background:#1565c0}
-    .panel{margin-top:20px;padding:15px;border-radius:12px;background:#0f1a3a}
-    .alertas{border-left:6px solid #e53935}
-    .advertencias{border-left:6px solid #fbc02d}
-    .item{border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:10px;margin-top:10px}
-    .titulo{display:flex;justify-content:space-between;font-weight:bold;margin-bottom:10px}
-    .resumen-extra{margin-top:20px;padding:15px;border-radius:12px;background:#0c1430;font-size:14px}
-    footer{margin-top:30px;text-align:center;font-size:12px;opacity:.6}
-  </style>
+<style>
+*{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+body{margin:0;background:#0f172a;color:#e5e7eb}
+header{padding:16px 24px;background:#020617;border-bottom:1px solid #1e293b}
+header h1{margin:0;font-size:22px}
+
+main{padding:20px;display:flex;flex-direction:column;gap:16px}
+
+.controls{display:flex;gap:12px;flex-wrap:wrap}
+select,button{
+  padding:10px;background:#020617;color:#e5e7eb;
+  border:1px solid #334155;border-radius:6px
+}
+button{cursor:pointer}
+button:hover{background:#1e293b}
+
+.section{
+  background:#020617;
+  border-radius:12px;
+  padding:16px;
+}
+.section.red{border-left:6px solid #dc2626}
+.section.yellow{border-left:6px solid #f59e0b}
+
+.section-title{
+  font-weight:bold;
+  font-size:16px;
+  margin-bottom:10px;
+}
+
+.item{
+  background:#020617;
+  border:1px solid #1e293b;
+  border-radius:10px;
+  padding:12px;
+  margin-bottom:8px;
+}
+
+footer{
+  padding:10px;
+  text-align:center;
+  font-size:12px;
+  color:#64748b;
+  border-top:1px solid #1e293b
+}
+</style>
 </head>
 
 <body>
-<div class="container">
-  <h1>Control Inteligente de Pérdidas – RAG & Donaciones</h1>
+<header>
+<h1>Control Inteligente de Pérdidas – RAG & Donaciones</h1>
+</header>
 
-  <div class="filters">
-    <select id="selectDias">
-      <option value="7">Últimos 7 días</option>
-      <option value="14">Últimos 14 días</option>
-      <option value="30">Últimos 30 días</option>
-    </select>
+<main>
 
-    <select id="selectSector">
-      <option value="Toda la sucursal">Toda la sucursal</option>
-      <option value="CARNICERIA">CARNICERIA</option>
-      <option value="VERDULERIA">VERDULERIA</option>
-      <option value="FIAMBRES Y LACTEOS">FIAMBRES Y LACTEOS</option>
-    </select>
+<div class="controls">
+  <select id="dias">
+    <option value="7">7 días</option>
+    <option value="14">14 días</option>
+    <option value="30">30 días</option>
+    <option value="60">60 días</option>
+    <option value="90">90 días</option>
+  </select>
 
-    <button id="btnGenerar">Generar reporte</button>
-    <button id="btnExportar">Exportar CSV</button>
-  </div>
+  <select id="sector">
+    <option value="ALL">Toda la sucursal</option>
+    <option>CARNICERIA</option>
+    <option>VERDULERIA</option>
+    <option>FIAMBRES Y LACTEOS</option>
+    <option>ALMACEN</option>
+  </select>
 
-  <div id="resultado"></div>
-  <div id="resumenExtra" class="resumen-extra"></div>
-
-  <footer>Control inteligente · Datos en tiempo real</footer>
+  <button onclick="generar()">Generar reporte</button>
 </div>
 
+<div id="resultado"></div>
+
+</main>
+
+<footer>
+Datos en tiempo real · Google Sheets
+</footer>
+
 <script>
-  // ✅ URL YA INCLUIDA (no tenés que hacer nada)
-  const API_URL = "https://script.google.com/macros/s/AKfycbzZF1QIb9axK7iHoRYHTqM3uX7JuYpjJKyOuPF5F0RJnuCtPeQDwD2xeVxZBONYTy5dxg/exec";
+const URL_API =
+"https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLinSnPuChMLpmL3HLTh7jyvjRx1e1wfH8tohBdYcJilAIhxFexmJFaDFnUKYR6dtZtdKNcPcDXzUohPZua9NULr_J14K3LIR2IjnOnDiohh0Q38HLTk1LI33BME60E4jgmmDCPrgILNPn9JufNln9Od0WH9iMGi3Y14WDUygyg3M8AsYZuK38Y6jQScEpJk_Iq8d2iK6Kce9kZPeqq8hkebC4pbxrl50OR60as1S1gTGjilX-ROxRKSkKGlMg&lib=MZrD42Mo3kLRTVRl9Hx16jtuNG_C6aXEm";
 
-  document.getElementById("btnGenerar").addEventListener("click", generarReporte);
-  document.getElementById("btnExportar").addEventListener("click", exportarCSV);
+async function generar(){
+  const dias = document.getElementById("dias").value;
+  const sector = document.getElementById("sector").value;
 
-  async function generarReporte(){
-    const dias=document.getElementById("selectDias").value;
-    const sector=document.getElementById("selectSector").value;
-    const url=`${API_URL}?dias=${dias}&sector=${encodeURIComponent(sector)}`;
+  const res = await fetch(`${URL_API}&dias=${dias}&sector=${sector}`);
+  const data = await res.json();
 
-    const cont=document.getElementById("resultado");
-    const resumen=document.getElementById("resumenExtra");
-    cont.innerHTML="Cargando reporte…";
-    resumen.innerHTML="";
+  const box = document.getElementById("resultado");
+  box.innerHTML = "";
 
-    try{
-      const res=await fetch(url);
-      const data=await res.json();
-      render(data);
-    }catch(e){
-      cont.innerHTML="Error al generar el reporte";
-      console.error(e);
-    }
+  /* RESUMEN */
+  box.innerHTML += `
+  <div class="section">
+    <div class="section-title">📊 Resumen últimos ${dias} días</div>
+    Alertas: <strong>${data.resumen.total_alertas}</strong> |
+    Advertencias: <strong>${data.resumen.total_advertencias}</strong>
+  </div>`;
+
+  /* ALERTAS */
+  if(data.alertas.length){
+    box.innerHTML += `<div class="section red"><div class="section-title">🔴 Alertas</div></div>`;
+    data.alertas.forEach(p => box.innerHTML += card(p));
   }
 
-  function render(data){
-    const cont=document.getElementById("resultado");
-    cont.innerHTML="";
-
-    if(data.alertas?.length){
-      cont.innerHTML+=`
-        <div class="panel alertas">
-          <div class="titulo">🔴 ALERTAS</div>
-          ${data.alertas.map(a=>`
-            <div class="item">
-              <b>${a.producto} (${a.sku})</b><br>
-              Evento máx: ${a.cantidad_evento_max} ${a.unidad}<br>
-              Acumulado período: ${a.cantidad_acumulada_periodo}
-            </div>`).join("")}
-        </div>`;
-    }
-
-    if(data.advertencias?.length){
-      cont.innerHTML+=`
-        <div class="panel advertencias">
-          <div class="titulo">🟡 ADVERTENCIAS</div>
-          ${data.advertencias.map(a=>`
-            <div class="item">
-              <b>${a.producto} (${a.sku})</b><br>
-              Evento máx: ${a.cantidad_evento_max} ${a.unidad}<br>
-              Acumulado período: ${a.cantidad_acumulada_periodo}
-            </div>`).join("")}
-        </div>`;
-    }
-
-    document.getElementById("resumenExtra").innerHTML=`
-      <b>Resumen del período</b><br>
-      Producto más recurrente: ${data.top_producto||"N/D"}<br>
-      Sector más afectado: ${data.top_sector||"N/D"}<br>
-      Total de eventos: ${data.total_eventos||0}`;
+  /* ADVERTENCIAS */
+  if(data.advertencias.length){
+    box.innerHTML += `<div class="section yellow"><div class="section-title">🟡 Advertencias</div></div>`;
+    data.advertencias.forEach(p => box.innerHTML += card(p));
   }
 
-  function exportarCSV(){
-    window.open(`${API_URL}?export=csv`,"_blank");
+  /* RANKING */
+  if(data.ranking.length){
+    box.innerHTML += `<div class="section"><div class="section-title">📈 Ranking del período</div></div>`;
+    data.ranking.forEach(p => box.innerHTML += card(p));
   }
+
+  /* MÁS FRECUENTE */
+  if(data.mas_frecuente){
+    box.innerHTML += `
+    <div class="section">
+      <div class="section-title">🔁 Producto más frecuente</div>
+      ${card(data.mas_frecuente)}
+    </div>`;
+  }
+
+  /* MÁS RAG */
+  if(data.mas_rag){
+    box.innerHTML += `
+    <div class="section">
+      <div class="section-title">⚠️ Producto con más RAG</div>
+      ${card(data.mas_rag)}
+    </div>`;
+  }
+}
+
+function card(p){
+  return `
+  <div class="item">
+    <strong>${p.producto}</strong> (${p.sku})<br>
+    ${p.nivel || ""} ${p.motivo || ""}<br>
+    Evento máx: ${p.cantidad_evento_max} ${p.unidad}<br>
+    Acumulado: ${p.cantidad_acumulada_periodo}
+  </div>`;
+}
 </script>
+
 </body>
 </html>
