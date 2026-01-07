@@ -6,202 +6,118 @@
   <title>Control Inteligente de Pérdidas – RAG & Donaciones</title>
 
   <style>
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background: linear-gradient(180deg, #050b1a, #0b1533);
-      color: #fff;
-    }
-
-    .container {
-      padding: 20px;
-      max-width: 900px;
-      margin: auto;
-    }
-
-    h1 {
-      font-size: 22px;
-      margin-bottom: 20px;
-    }
-
-    .filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    select, button {
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      background: #121c3d;
-      color: #fff;
-      font-size: 14px;
-    }
-
-    button {
-      cursor: pointer;
-      background: #1e88e5;
-    }
-
-    button:hover {
-      background: #1565c0;
-    }
-
-    .panel {
-      margin-top: 20px;
-      padding: 15px;
-      border-radius: 12px;
-      background: #0f1a3a;
-    }
-
-    .alertas {
-      border-left: 6px solid #e53935;
-    }
-
-    .advertencias {
-      border-left: 6px solid #fbc02d;
-    }
-
-    .item {
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 10px;
-      padding: 10px;
-      margin-top: 10px;
-    }
-
-    .titulo {
-      display: flex;
-      justify-content: space-between;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
-    .resumen-extra {
-      margin-top: 20px;
-      padding: 15px;
-      border-radius: 12px;
-      background: #0c1430;
-      font-size: 14px;
-    }
-
-    footer {
-      margin-top: 30px;
-      text-align: center;
-      font-size: 12px;
-      opacity: 0.6;
-    }
+    body{margin:0;font-family:system-ui;background:linear-gradient(180deg,#050b1a,#0b1533);color:#fff}
+    .container{padding:20px;max-width:900px;margin:auto}
+    h1{font-size:22px;margin-bottom:20px}
+    .filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+    select,button{padding:10px;border-radius:8px;border:none;background:#121c3d;color:#fff;font-size:14px}
+    button{cursor:pointer;background:#1e88e5}
+    button:hover{background:#1565c0}
+    .panel{margin-top:20px;padding:15px;border-radius:12px;background:#0f1a3a}
+    .alertas{border-left:6px solid #e53935}
+    .advertencias{border-left:6px solid #fbc02d}
+    .item{border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:10px;margin-top:10px}
+    .titulo{display:flex;justify-content:space-between;font-weight:bold;margin-bottom:10px}
+    .resumen-extra{margin-top:20px;padding:15px;border-radius:12px;background:#0c1430;font-size:14px}
+    footer{margin-top:30px;text-align:center;font-size:12px;opacity:.6}
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <h1>Control Inteligente de Pérdidas – RAG & Donaciones</h1>
+<div class="container">
+  <h1>Control Inteligente de Pérdidas – RAG & Donaciones</h1>
 
-    <div class="filters">
-      <select id="selectDias">
-        <option value="7">Últimos 7 días</option>
-        <option value="14">Últimos 14 días</option>
-        <option value="30">Últimos 30 días</option>
-      </select>
+  <div class="filters">
+    <select id="selectDias">
+      <option value="7">Últimos 7 días</option>
+      <option value="14">Últimos 14 días</option>
+      <option value="30">Últimos 30 días</option>
+    </select>
 
-      <select id="selectSector">
-        <option value="Toda la sucursal">Toda la sucursal</option>
-        <option value="CARNICERIA">CARNICERIA</option>
-        <option value="VERDULERIA">VERDULERIA</option>
-        <option value="FIAMBRES Y LACTEOS">FIAMBRES Y LACTEOS</option>
-      </select>
+    <select id="selectSector">
+      <option value="Toda la sucursal">Toda la sucursal</option>
+      <option value="CARNICERIA">CARNICERIA</option>
+      <option value="VERDULERIA">VERDULERIA</option>
+      <option value="FIAMBRES Y LACTEOS">FIAMBRES Y LACTEOS</option>
+    </select>
 
-      <button id="btnGenerar">Generar reporte</button>
-      <button id="btnExportar">Exportar CSV</button>
-    </div>
-
-    <div id="resultado"></div>
-    <div id="resumenExtra" class="resumen-extra"></div>
-
-    <footer>
-      Control inteligente · Datos en tiempo real
-    </footer>
+    <button id="btnGenerar">Generar reporte</button>
+    <button id="btnExportar">Exportar CSV</button>
   </div>
 
-  <script>
-    const API_URL = "PEGÁ_ACÁ_TU_URL_EXEC_DEL_GS";
+  <div id="resultado"></div>
+  <div id="resumenExtra" class="resumen-extra"></div>
 
-    document.getElementById("btnGenerar").addEventListener("click", generarReporte);
-    document.getElementById("btnExportar").addEventListener("click", exportarCSV);
+  <footer>Control inteligente · Datos en tiempo real</footer>
+</div>
 
-    async function generarReporte() {
-      const dias = document.getElementById("selectDias").value;
-      const sector = document.getElementById("selectSector").value;
+<script>
+  // ✅ URL YA INCLUIDA (no tenés que hacer nada)
+  const API_URL = "https://script.google.com/macros/s/AKfycbzZF1QIb9axK7iHoRYHTqM3uX7JuYpjJKyOuPF5F0RJnuCtPeQDwD2xeVxZBONYTy5dxg/exec";
 
-      const url = `${API_URL}?dias=${dias}&sector=${encodeURIComponent(sector)}`;
+  document.getElementById("btnGenerar").addEventListener("click", generarReporte);
+  document.getElementById("btnExportar").addEventListener("click", exportarCSV);
 
-      const contenedor = document.getElementById("resultado");
-      const resumenExtra = document.getElementById("resumenExtra");
+  async function generarReporte(){
+    const dias=document.getElementById("selectDias").value;
+    const sector=document.getElementById("selectSector").value;
+    const url=`${API_URL}?dias=${dias}&sector=${encodeURIComponent(sector)}`;
 
-      contenedor.innerHTML = "Cargando reporte...";
-      resumenExtra.innerHTML = "";
+    const cont=document.getElementById("resultado");
+    const resumen=document.getElementById("resumenExtra");
+    cont.innerHTML="Cargando reporte…";
+    resumen.innerHTML="";
 
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        renderReporte(data);
-      } catch (err) {
-        contenedor.innerHTML = "Error al generar el reporte";
-        console.error(err);
-      }
+    try{
+      const res=await fetch(url);
+      const data=await res.json();
+      render(data);
+    }catch(e){
+      cont.innerHTML="Error al generar el reporte";
+      console.error(e);
+    }
+  }
+
+  function render(data){
+    const cont=document.getElementById("resultado");
+    cont.innerHTML="";
+
+    if(data.alertas?.length){
+      cont.innerHTML+=`
+        <div class="panel alertas">
+          <div class="titulo">🔴 ALERTAS</div>
+          ${data.alertas.map(a=>`
+            <div class="item">
+              <b>${a.producto} (${a.sku})</b><br>
+              Evento máx: ${a.cantidad_evento_max} ${a.unidad}<br>
+              Acumulado período: ${a.cantidad_acumulada_periodo}
+            </div>`).join("")}
+        </div>`;
     }
 
-    function renderReporte(data) {
-      const contenedor = document.getElementById("resultado");
-      contenedor.innerHTML = "";
-
-      if (data.alertas.length > 0) {
-        contenedor.innerHTML += `
-          <div class="panel alertas">
-            <div class="titulo">
-              <span>🔴 ALERTAS</span>
-            </div>
-            ${data.alertas.map(a => `
-              <div class="item">
-                <b>${a.producto} (${a.sku})</b><br>
-                Evento máx: ${a.cantidad_evento_max} ${a.unidad}<br>
-                Acumulado período: ${a.cantidad_acumulada_periodo}
-              </div>
-            `).join("")}
-          </div>
-        `;
-      }
-
-      if (data.advertencias.length > 0) {
-        contenedor.innerHTML += `
-          <div class="panel advertencias">
-            <div class="titulo">
-              <span>🟡 ADVERTENCIAS</span>
-            </div>
-            ${data.advertencias.map(a => `
-              <div class="item">
-                <b>${a.producto} (${a.sku})</b><br>
-                Evento máx: ${a.cantidad_evento_max} ${a.unidad}<br>
-                Acumulado período: ${a.cantidad_acumulada_periodo}
-              </div>
-            `).join("")}
-          </div>
-        `;
-      }
-
-      document.getElementById("resumenExtra").innerHTML = `
-        <b>Resumen del período</b><br>
-        Producto más recurrente: ${data.top_producto || "N/D"}<br>
-        Sector más afectado: ${data.top_sector || "N/D"}<br>
-        Total de eventos: ${data.total_eventos || 0}
-      `;
+    if(data.advertencias?.length){
+      cont.innerHTML+=`
+        <div class="panel advertencias">
+          <div class="titulo">🟡 ADVERTENCIAS</div>
+          ${data.advertencias.map(a=>`
+            <div class="item">
+              <b>${a.producto} (${a.sku})</b><br>
+              Evento máx: ${a.cantidad_evento_max} ${a.unidad}<br>
+              Acumulado período: ${a.cantidad_acumulada_periodo}
+            </div>`).join("")}
+        </div>`;
     }
 
-    function exportarCSV() {
-      alert("Exportación CSV pendiente (backend ya preparado)");
-    }
-  </script>
+    document.getElementById("resumenExtra").innerHTML=`
+      <b>Resumen del período</b><br>
+      Producto más recurrente: ${data.top_producto||"N/D"}<br>
+      Sector más afectado: ${data.top_sector||"N/D"}<br>
+      Total de eventos: ${data.total_eventos||0}`;
+  }
+
+  function exportarCSV(){
+    window.open(`${API_URL}?export=csv`,"_blank");
+  }
+</script>
 </body>
 </html>
