@@ -2,191 +2,260 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Control Inteligente de Pérdidas – RAG & Donaciones</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
     body {
       margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background: radial-gradient(circle at top, #0b1b3a, #020617);
+      background: linear-gradient(180deg, #020617, #020617 40%, #020617);
       color: #e5e7eb;
+    }
+
+    header {
+      padding: 24px;
+      font-size: 26px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #020617, #020617);
     }
 
     .container {
+      padding: 20px;
       max-width: 900px;
       margin: auto;
-      padding: 24px;
-    }
-
-    h1 {
-      font-size: 1.6rem;
-      margin-bottom: 24px;
     }
 
     .controls {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      display: flex;
       gap: 12px;
-      margin-bottom: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
     }
 
     select, button {
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      font-size: 1rem;
-    }
-
-    select {
-      background: #0f172a;
+      background: #020617;
+      border: 1px solid #1f2937;
       color: #e5e7eb;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 16px;
     }
 
     button {
-      background: #1e293b;
-      color: #fff;
       cursor: pointer;
+      background: #1f2937;
     }
 
     button:hover {
-      background: #334155;
+      background: #374151;
     }
 
     .error {
-      background: #7f1d1d;
-      color: #fee2e2;
+      background: #3f0d0d;
+      border-left: 6px solid #ef4444;
       padding: 14px;
-      border-radius: 10px;
-      margin-bottom: 16px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .section {
+      margin-bottom: 28px;
+    }
+
+    .section h2 {
+      font-size: 20px;
+      margin-bottom: 12px;
     }
 
     .card {
       background: #020617;
+      border: 1px solid #1f2937;
+      border-left: 6px solid transparent;
       border-radius: 14px;
       padding: 16px;
-      margin-bottom: 16px;
-      border-left: 6px solid;
+      margin-bottom: 12px;
     }
 
-    .alerta { border-color: #ef4444; }
-    .advertencia { border-color: #facc15; }
+    .alerta {
+      border-left-color: #ef4444;
+    }
 
-    .footer {
+    .advertencia {
+      border-left-color: #facc15;
+    }
+
+    .muted {
+      color: #9ca3af;
+      font-size: 14px;
+    }
+
+    footer {
       text-align: center;
-      opacity: 0.6;
-      margin-top: 32px;
-      font-size: 0.85rem;
+      padding: 20px;
+      color: #6b7280;
+      font-size: 14px;
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <h1>Control Inteligente de Pérdidas – RAG & Donaciones</h1>
 
-    <div class="controls">
-      <select id="dias">
-        <option value="7">7 días</option>
-        <option value="14">14 días</option>
-        <option value="30">30 días</option>
-      </select>
+<header>
+  Control Inteligente de Pérdidas – RAG & Donaciones
+</header>
 
-      <select id="sector">
-        <option value="ALL">Toda la sucursal</option>
-      </select>
+<div class="container">
 
-      <button id="btnGenerar">Generar reporte</button>
-    </div>
+  <div class="controls">
+    <select id="dias">
+      <option value="7">7 días</option>
+      <option value="14" selected>14 días</option>
+      <option value="30">30 días</option>
+    </select>
 
-    <div id="mensajes"></div>
-    <div id="resultado"></div>
+    <select id="sector">
+      <option value="ALL">Toda la sucursal</option>
+    </select>
 
-    <div class="footer">
-      Control inteligente · Datos en tiempo real
-    </div>
+    <button id="btnGenerar">Generar reporte</button>
   </div>
 
-  <script>
-    const API_URL = "/.netlify/functions/getEventos";
+  <div id="mensaje"></div>
 
-    const mensajes = document.getElementById("mensajes");
-    const resultado = document.getElementById("resultado");
-    const selectSector = document.getElementById("sector");
-    const selectDias = document.getElementById("dias");
-    const btn = document.getElementById("btnGenerar");
+  <!-- RESUMEN -->
+  <div id="resumen" class="section"></div>
 
-    function mostrarError(texto) {
-      mensajes.innerHTML = `<div class="error">❌ ${texto}</div>`;
-    }
+  <!-- ALERTAS -->
+  <div id="alertas" class="section"></div>
 
-    function limpiar() {
-      mensajes.innerHTML = "";
-      resultado.innerHTML = "";
-    }
+  <!-- ADVERTENCIAS -->
+  <div id="advertencias" class="section"></div>
 
-    async function cargarSectores() {
-      try {
-        const res = await fetch(`${API_URL}?dias=7&sector=ALL`);
-        const data = await res.json();
+  <!-- RANKING -->
+  <div id="ranking" class="section"></div>
 
-        if (!data.sectores) throw new Error();
+</div>
 
-        selectSector.innerHTML = `<option value="ALL">Toda la sucursal</option>`;
-        data.sectores.forEach(s => {
-          const opt = document.createElement("option");
-          opt.value = s;
-          opt.textContent = s;
-          selectSector.appendChild(opt);
-        });
+<footer>
+  Control inteligente · Datos en tiempo real
+</footer>
 
-      } catch {
-        mostrarError("No se pudieron cargar los sectores.");
-      }
-    }
+<script>
+const API = "/.netlify/functions/getEventos";
 
-    async function generarReporte() {
-      limpiar();
+const btn = document.getElementById("btnGenerar");
+const diasSelect = document.getElementById("dias");
+const sectorSelect = document.getElementById("sector");
 
-      try {
-        const dias = selectDias.value;
-        const sector = selectSector.value;
+const mensaje = document.getElementById("mensaje");
+const resumenDiv = document.getElementById("resumen");
+const alertasDiv = document.getElementById("alertas");
+const advertenciasDiv = document.getElementById("advertencias");
+const rankingDiv = document.getElementById("ranking");
 
-        const res = await fetch(`${API_URL}?dias=${dias}&sector=${encodeURIComponent(sector)}`);
-        const data = await res.json();
+btn.addEventListener("click", cargarReporte);
+window.addEventListener("load", cargarSectores);
 
-        if (data.error) throw new Error(data.error);
+async function cargarSectores() {
+  try {
+    const r = await fetch(`${API}?dias=7&sector=ALL`);
+    const data = await r.json();
 
-        if (data.alertas.length === 0 && data.advertencias.length === 0) {
-          resultado.innerHTML = "<p>✔️ No se detectaron alertas ni advertencias.</p>";
-          return;
-        }
+    if (!data.sectores) return;
 
-        data.alertas.forEach(a => {
-          resultado.innerHTML += `
-            <div class="card alerta">
-              <strong>${a.producto} (${a.sku})</strong><br>
-              Evento máx: ${a.cantidad_evento_max} ${a.unidad}<br>
-              Acumulado período: ${a.cantidad_acumulada_periodo}
-            </div>`;
-        });
+    data.sectores.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = s;
+      sectorSelect.appendChild(opt);
+    });
+  } catch {
+    mensaje.innerHTML = `<div class="error">No se pudieron cargar los sectores.</div>`;
+  }
+}
 
-        data.advertencias.forEach(a => {
-          resultado.innerHTML += `
-            <div class="card advertencia">
-              <strong>${a.producto} (${a.sku})</strong><br>
-              Evento máx: ${a.cantidad_evento_max} ${a.unidad}<br>
-              Acumulado período: ${a.cantidad_acumulada_periodo}
-            </div>`;
-        });
+async function cargarReporte() {
+  mensaje.innerHTML = "";
+  resumenDiv.innerHTML = "";
+  alertasDiv.innerHTML = "";
+  advertenciasDiv.innerHTML = "";
+  rankingDiv.innerHTML = "";
 
-      } catch (e) {
-        mostrarError("Error real al generar reporte.");
-      }
-    }
+  const dias = diasSelect.value;
+  const sector = sectorSelect.value;
 
-    btn.addEventListener("click", generarReporte);
-    cargarSectores();
-  </script>
+  try {
+    const r = await fetch(`${API}?dias=${dias}&sector=${sector}`);
+    const data = await r.json();
+
+    if (data.error) throw new Error(data.error);
+
+    renderResumen(data);
+    renderAlertas(data.alertas);
+    renderAdvertencias(data.advertencias);
+    renderRanking(data.ranking);
+
+  } catch (err) {
+    mensaje.innerHTML = `<div class="error">Error real al generar reporte.</div>`;
+  }
+}
+
+function renderResumen(data) {
+  resumenDiv.innerHTML = `
+    <h2>Resumen (${data.resumen.dias} días)</h2>
+    <div class="card">
+      <b>Sector:</b> ${data.resumen.sector}<br>
+      <b>Alertas:</b> ${data.resumen.total_alertas}<br>
+      <b>Advertencias:</b> ${data.resumen.total_advertencias}<br><br>
+      <b>Producto más sonado:</b> ${data.mas_frecuente?.producto || "—"}<br>
+      <b>Más RAG:</b> ${data.mas_rag?.producto || "—"}
+    </div>
+  `;
+}
+
+function renderAlertas(lista) {
+  if (!lista.length) return;
+  alertasDiv.innerHTML = `<h2>🔴 Alertas</h2>`;
+  lista.forEach(p => {
+    alertasDiv.innerHTML += cardProducto(p, "alerta");
+  });
+}
+
+function renderAdvertencias(lista) {
+  if (!lista.length) return;
+  advertenciasDiv.innerHTML = `<h2>🟡 Advertencias</h2>`;
+  lista.forEach(p => {
+    advertenciasDiv.innerHTML += cardProducto(p, "advertencia");
+  });
+}
+
+function renderRanking(lista) {
+  if (!lista.length) return;
+  rankingDiv.innerHTML = `<h2>📊 Ranking de impacto</h2>`;
+  lista.forEach((p, i) => {
+    rankingDiv.innerHTML += `
+      <div class="card">
+        <b>#${i + 1} ${p.producto}</b><br>
+        SKU: ${p.sku}<br>
+        Acumulado: ${p.acumulado} ${p.unidad}<br>
+        Evento máx: ${p.maxEvento}
+      </div>
+    `;
+  });
+}
+
+function cardProducto(p, tipo) {
+  return `
+    <div class="card ${tipo}">
+      <b>${p.producto} (${p.sku})</b><br>
+      <span class="muted">${p.motivo}</span><br>
+      Evento máx: ${p.cantidad_evento_max} ${p.unidad}<br>
+      Acumulado período: ${p.cantidad_acumulada_periodo}
+    </div>
+  `;
+}
+</script>
+
 </body>
 </html>
