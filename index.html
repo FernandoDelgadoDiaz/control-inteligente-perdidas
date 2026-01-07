@@ -37,7 +37,6 @@ button {
   margin-bottom:14px;
 }
 .alert { border-left:6px solid #ef4444; }
-.warning { border-left:6px solid #facc15; }
 .rank { border-left:6px solid #22c55e; }
 .title { font-weight:700; margin-bottom:6px; }
 .muted { opacity:.7; font-size:.9rem; }
@@ -92,7 +91,7 @@ async function cargar(){
 function render(data){
   out.innerHTML = "";
 
-  // sectores dinámicos
+  // Sectores
   if (data.sectores?.length){
     sectorSel.innerHTML = `<option value="ALL">Toda la sucursal</option>`;
     data.sectores.forEach(s=>{
@@ -106,12 +105,12 @@ function render(data){
       <div class="title">Resumen (${data.resumen.dias} días)</div>
       Sector: ${data.resumen.sector}
       ${data.mas_donado ? `<br><b>Producto más donado:</b> ${data.mas_donado.producto}` : ""}
-      ${data.mas_rag_eventos && data.mas_rag_eventos.eventos>1 ? `<br><b>Producto más en RAG (eventos):</b> ${data.mas_rag_eventos.producto}` : ""}
+      ${data.mas_rag_eventos ? `<br><b>Producto más en RAG (eventos):</b> ${data.mas_rag_eventos.producto}` : ""}
       ${data.mas_rag_cantidad ? `<br><b>Producto más en RAG (cantidad):</b> ${data.mas_rag_cantidad.producto}` : ""}
     </div>
   `;
 
-  // ALERTAS
+  // ALERTAS (solo eventos, sin ranking)
   data.ranking.forEach(p=>{
     out.innerHTML += `
       <div class="card alert">
