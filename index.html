@@ -1,159 +1,147 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Control Inteligente de Pérdidas</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <style>
-*{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
-body{margin:0;background:#0f172a;color:#e5e7eb}
-header{padding:16px 24px;background:#020617;border-bottom:1px solid #1e293b}
-header h1{margin:0;font-size:22px}
-
-main{padding:20px;display:flex;flex-direction:column;gap:16px}
-
-.controls{display:flex;gap:12px;flex-wrap:wrap}
-select,button{
-  padding:10px;background:#020617;color:#e5e7eb;
-  border:1px solid #334155;border-radius:6px
-}
-button{cursor:pointer}
-button:hover{background:#1e293b}
-
-.section{
+body {
+  margin:0;
   background:#020617;
-  border-radius:12px;
+  color:#e5e7eb;
+  font-family:Arial,Helvetica,sans-serif;
+}
+header {
+  padding:16px;
+  border-bottom:1px solid #1e293b;
+}
+main {
   padding:16px;
 }
-.section.red{border-left:6px solid #dc2626}
-.section.yellow{border-left:6px solid #f59e0b}
-
-.section-title{
-  font-weight:bold;
-  font-size:16px;
-  margin-bottom:10px;
+select, button {
+  background:#020617;
+  color:#e5e7eb;
+  border:1px solid #334155;
+  padding:10px;
+  border-radius:6px;
+  margin-right:6px;
 }
-
-.item{
+button { cursor:pointer }
+.card {
   background:#020617;
   border:1px solid #1e293b;
-  border-radius:10px;
-  padding:12px;
-  margin-bottom:8px;
+  border-radius:8px;
+  padding:14px;
+  margin-top:14px;
 }
-
-.muted{color:#94a3b8;font-size:13px}
-
-footer{
+.alerta { border-left:6px solid #dc2626 }
+.warn { border-left:6px solid #facc15 }
+.ok { color:#22c55e }
+.error {
+  background:#7f1d1d;
+  color:#fecaca;
   padding:10px;
-  text-align:center;
-  font-size:12px;
-  color:#64748b;
-  border-top:1px solid #1e293b
+  border-radius:6px;
 }
 </style>
 </head>
 
 <body>
 <header>
-<h1>Control Inteligente de Pérdidas – RAG & Donaciones</h1>
+  <h2>Control Inteligente de Pérdidas – RAG & Donaciones</h2>
 </header>
 
 <main>
-
-<div class="controls">
   <select id="dias">
     <option value="7">7 días</option>
     <option value="14">14 días</option>
     <option value="30">30 días</option>
-    <option value="60">60 días</option>
-    <option value="90">90 días</option>
   </select>
 
   <select id="sector">
     <option value="ALL">Toda la sucursal</option>
-    <option value="CARNICERIA">Carnicería</option>
-    <option value="VERDULERIA">Verdulería</option>
-    <option value="FIAMBRES Y LACTEOS">Fiambres y Lácteos</option>
-    <option value="ALMACEN">Almacén</option>
   </select>
 
   <button onclick="generar()">Generar reporte</button>
-</div>
 
-<div id="resultado"></div>
-
+  <div id="out"></div>
 </main>
 
-<footer>
-Control inteligente · Datos en tiempo real
-</footer>
-
 <script>
-const URL_API =
-"https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLinSnPuChMLpmL3HLTh7jyvjRx1e1wfH8tohBdYcJilAIhxFexmJFaDFnUKYR6dtZtdKNcPcDXzUohPZua9NULr_J14K3LIR2IjnOnDiohh0Q38HLTk1LI33BME60E4jgmmDCPrgILNPn9JufNln9Od0WH9iMGi3Y14WDUygyg3M8AsYZuK38Y6jQScEpJk_Iq8d2iK6Kce9kZPeqq8hkebC4pbxrl50OR60as1S1gTGjilX-ROxRKSkKGlMg&lib=MZrD42Mo3kLRTVRl9Hx16jtuNG_C6aXEm";
+const API_URL = "PEGÁ_ACÁ_TU_URL_GOOGLE_SCRIPT";
 
-async function generar(){
-  const dias = document.getElementById("dias").value;
-  const sector = document.getElementById("sector").value;
-  const box = document.getElementById("resultado");
+async function generar() {
+  const out = document.getElementById("out");
+  out.innerHTML = "Cargando...";
 
-  box.innerHTML = `<div class="section"><span class="muted">Generando reporte…</span></div>`;
+  try {
+    const dias = document.getElementById("dias").value;
+    const sector = document.getElementById("sector").value;
 
-  try{
-    const res = await fetch(`${URL_API}&dias=${dias}&sector=${encodeURIComponent(sector)}`);
+    const res = await fetch(`${API_URL}?dias=${dias}&sector=${sector}`);
     const data = await res.json();
-    box.innerHTML = "";
 
-    box.innerHTML += `
-      <div class="section">
-        <div class="section-title">📊 Resumen últimos ${dias} días</div>
-        Alertas: <strong>${data.resumen.total_alertas}</strong> |
-        Advertencias: <strong>${data.resumen.total_advertencias}</strong>
-      </div>`;
-
-    if(data.alertas.length){
-      box.innerHTML += `<div class="section red"><div class="section-title">🔴 Alertas</div></div>`;
-      data.alertas.forEach(p => box.innerHTML += card(p));
+    if (data.error) {
+      out.innerHTML = `<div class="error">${data.error}</div>`;
+      return;
     }
 
-    if(data.advertencias.length){
-      box.innerHTML += `<div class="section yellow"><div class="section-title">🟡 Advertencias</div></div>`;
-      data.advertencias.forEach(p => box.innerHTML += card(p));
+    // Cargar sectores dinámicos
+    const sel = document.getElementById("sector");
+    sel.innerHTML = `<option value="ALL">Toda la sucursal</option>`;
+    (data.sectores || []).forEach(s => {
+      sel.innerHTML += `<option value="${s}">${s}</option>`;
+    });
+
+    let html = `
+      <div class="card">
+        <strong>Resumen</strong><br>
+        Alertas: ${data.resumen.total_alertas}<br>
+        Advertencias: ${data.resumen.total_advertencias}
+      </div>
+    `;
+
+    if (data.alertas.length) {
+      html += `<div class="card alerta"><strong>ALERTAS</strong>`;
+      data.alertas.forEach(a=>{
+        html+=`<p>${a.producto} (${a.sku}) – ${a.cantidad_evento_max} ${a.unidad}</p>`;
+      });
+      html+=`</div>`;
     }
 
-    if(!data.alertas.length && !data.advertencias.length){
-      box.innerHTML += `<div class="section"><span class="muted">✔ Sin alertas ni advertencias en el período.</span></div>`;
+    if (data.advertencias.length) {
+      html += `<div class="card warn"><strong>ADVERTENCIAS</strong>`;
+      data.advertencias.forEach(a=>{
+        html+=`<p>${a.producto} (${a.sku}) – ${a.cantidad_evento_max} ${a.unidad}</p>`;
+      });
+      html+=`</div>`;
     }
 
-    if(data.ranking?.length){
-      box.innerHTML += `<div class="section"><div class="section-title">📈 Ranking</div></div>`;
-      data.ranking.forEach(p => box.innerHTML += card(p));
+    if (data.mas_frecuente) {
+      html += `
+        <div class="card">
+          <strong>Producto más frecuente</strong><br>
+          ${data.mas_frecuente.producto}
+        </div>
+      `;
     }
 
-    if(data.mas_frecuente){
-      box.innerHTML += `<div class="section"><div class="section-title">🔁 Producto más frecuente</div>${card(data.mas_frecuente)}</div>`;
+    if (data.mas_rag) {
+      html += `
+        <div class="card">
+          <strong>Producto con más RAG</strong><br>
+          ${data.mas_rag.producto}
+        </div>
+      `;
     }
 
-    if(data.mas_rag){
-      box.innerHTML += `<div class="section"><div class="section-title">⚠️ Producto con más RAG</div>${card(data.mas_rag)}</div>`;
-    }
+    out.innerHTML = html;
 
-  } catch(e){
-    box.innerHTML = `<div class="section red">❌ Error al generar reporte</div>`;
+  } catch (e) {
+    out.innerHTML = `<div class="error">${e.message}</div>`;
   }
 }
-
-function card(p){
-  return `
-  <div class="item">
-    <strong>${p.producto}</strong> (${p.sku})<br>
-    Evento máx: ${p.maxEvento || p.cantidad_evento_max} ${p.unidad}<br>
-    Acumulado: ${p.acumulado || p.cantidad_acumulada_periodo}
-  </div>`;
-}
 </script>
-
 </body>
 </html>
