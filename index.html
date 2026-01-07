@@ -2,192 +2,150 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Control Inteligente de Pérdidas – RAG & Donaciones</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Control Inteligente de Pérdidas</title>
 
   <style>
     body {
       margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background: linear-gradient(180deg, #020617, #020617 40%, #020617);
+      background: linear-gradient(180deg, #020617, #0f172a);
       color: #e5e7eb;
-    }
-
-    header {
-      padding: 24px;
-      font-size: 26px;
-      font-weight: 700;
-      background: linear-gradient(90deg, #020617, #020617);
     }
 
     .container {
-      padding: 20px;
-      max-width: 900px;
+      max-width: 560px;
       margin: auto;
+      padding: 20px;
     }
 
-    .controls {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
+    h1 {
+      font-size: 24px;
+      margin-bottom: 16px;
     }
 
     select, button {
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 12px;
+      border-radius: 10px;
+      border: none;
+      font-size: 15px;
       background: #020617;
-      border: 1px solid #1f2937;
       color: #e5e7eb;
-      padding: 12px 16px;
-      border-radius: 12px;
-      font-size: 16px;
+      border: 1px solid #334155;
     }
 
     button {
+      background: #1e293b;
+      font-weight: 600;
       cursor: pointer;
-      background: #1f2937;
-    }
-
-    button:hover {
-      background: #374151;
-    }
-
-    .error {
-      background: #3f0d0d;
-      border-left: 6px solid #ef4444;
-      padding: 14px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-    }
-
-    .section {
-      margin-bottom: 28px;
-    }
-
-    .section h2 {
-      font-size: 20px;
-      margin-bottom: 12px;
     }
 
     .card {
-      background: #020617;
-      border: 1px solid #1f2937;
-      border-left: 6px solid transparent;
+      background: rgba(2, 6, 23, 0.9);
       border-radius: 14px;
-      padding: 16px;
+      padding: 14px;
       margin-bottom: 12px;
+      border: 1px solid #1e293b;
     }
 
     .alerta {
-      border-left-color: #ef4444;
+      border-left: 6px solid #ef4444;
     }
 
     .advertencia {
-      border-left-color: #facc15;
+      border-left: 6px solid #facc15;
+    }
+
+    .titulo {
+      font-size: 18px;
+      margin: 18px 0 8px;
+      font-weight: 700;
+    }
+
+    .error {
+      background: #7f1d1d;
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 12px;
     }
 
     .muted {
-      color: #9ca3af;
-      font-size: 14px;
-    }
-
-    footer {
       text-align: center;
-      padding: 20px;
-      color: #6b7280;
-      font-size: 14px;
+      font-size: 13px;
+      opacity: 0.7;
+      margin-top: 24px;
     }
   </style>
 </head>
 
 <body>
-
-<header>
-  Control Inteligente de Pérdidas – RAG & Donaciones
-</header>
-
 <div class="container">
 
-  <div class="controls">
-    <select id="dias">
-      <option value="7">7 días</option>
-      <option value="14" selected>14 días</option>
-      <option value="30">30 días</option>
-    </select>
+  <h1>Control Inteligente de Pérdidas</h1>
 
-    <select id="sector">
-      <option value="ALL">Toda la sucursal</option>
-    </select>
+  <select id="dias">
+    <option value="7">Últimos 7 días</option>
+    <option value="14">Últimos 14 días</option>
+    <option value="30" selected>Últimos 30 días</option>
+    <option value="60">Últimos 60 días</option>
+  </select>
 
-    <button id="btnGenerar">Generar reporte</button>
-  </div>
+  <select id="sector">
+    <option value="ALL">Toda la sucursal</option>
+  </select>
 
-  <div id="mensaje"></div>
+  <button onclick="generarReporte()">Generar reporte</button>
 
-  <!-- RESUMEN -->
-  <div id="resumen" class="section"></div>
+  <div id="output"></div>
 
-  <!-- ALERTAS -->
-  <div id="alertas" class="section"></div>
-
-  <!-- ADVERTENCIAS -->
-  <div id="advertencias" class="section"></div>
-
-  <!-- RANKING -->
-  <div id="ranking" class="section"></div>
+  <div class="muted">Datos en tiempo real · Uso interno</div>
 
 </div>
 
-<footer>
-  Control inteligente · Datos en tiempo real
-</footer>
-
 <script>
-const API = "/.netlify/functions/getEventos";
+/* ===============================
+   URL PRODUCCIÓN – YA DEFINIDA
+================================ */
+const API_URL = "/.netlify/functions/getEventos";
 
-const btn = document.getElementById("btnGenerar");
-const diasSelect = document.getElementById("dias");
-const sectorSelect = document.getElementById("sector");
+const output = document.getElementById("output");
+const selectSector = document.getElementById("sector");
 
-const mensaje = document.getElementById("mensaje");
-const resumenDiv = document.getElementById("resumen");
-const alertasDiv = document.getElementById("alertas");
-const advertenciasDiv = document.getElementById("advertencias");
-const rankingDiv = document.getElementById("ranking");
-
-btn.addEventListener("click", cargarReporte);
-window.addEventListener("load", cargarSectores);
-
+/* ===============================
+   CARGA DE SECTORES
+================================ */
 async function cargarSectores() {
   try {
-    const r = await fetch(`${API}?dias=7&sector=ALL`);
-    const data = await r.json();
+    const res = await fetch(`${API_URL}?dias=7&sector=ALL`);
+    const data = await res.json();
 
     if (!data.sectores) return;
 
-    data.sectores.forEach(s => {
+    data.sectores.forEach(sec => {
       const opt = document.createElement("option");
-      opt.value = s;
-      opt.textContent = s;
-      sectorSelect.appendChild(opt);
+      opt.value = sec;
+      opt.textContent = sec;
+      selectSector.appendChild(opt);
     });
   } catch {
-    mensaje.innerHTML = `<div class="error">No se pudieron cargar los sectores.</div>`;
+    output.innerHTML = `<div class="error">Error al cargar sectores.</div>`;
   }
 }
 
-async function cargarReporte() {
-  mensaje.innerHTML = "";
-  resumenDiv.innerHTML = "";
-  alertasDiv.innerHTML = "";
-  advertenciasDiv.innerHTML = "";
-  rankingDiv.innerHTML = "";
+/* ===============================
+   GENERAR REPORTE
+================================ */
+async function generarReporte() {
+  output.innerHTML = "";
 
-  const dias = diasSelect.value;
-  const sector = sectorSelect.value;
+  const dias = document.getElementById("dias").value;
+  const sector = selectSector.value;
 
   try {
-    const r = await fetch(`${API}?dias=${dias}&sector=${sector}`);
-    const data = await r.json();
+    const res = await fetch(`${API_URL}?dias=${dias}&sector=${sector}`);
+    const data = await res.json();
 
     if (data.error) throw new Error(data.error);
 
@@ -196,66 +154,87 @@ async function cargarReporte() {
     renderAdvertencias(data.advertencias);
     renderRanking(data.ranking);
 
-  } catch (err) {
-    mensaje.innerHTML = `<div class="error">Error real al generar reporte.</div>`;
+  } catch {
+    output.innerHTML = `<div class="error">Error real al generar el reporte.</div>`;
   }
 }
 
+/* ===============================
+   RENDER RESUMEN
+================================ */
 function renderResumen(data) {
-  resumenDiv.innerHTML = `
-    <h2>Resumen (${data.resumen.dias} días)</h2>
+  output.innerHTML += `
     <div class="card">
-      <b>Sector:</b> ${data.resumen.sector}<br>
-      <b>Alertas:</b> ${data.resumen.total_alertas}<br>
-      <b>Advertencias:</b> ${data.resumen.total_advertencias}<br><br>
-      <b>Producto más sonado:</b> ${data.mas_frecuente?.producto || "—"}<br>
-      <b>Más RAG:</b> ${data.mas_rag?.producto || "—"}
+      <b>Resumen (${data.resumen.dias} días)</b><br><br>
+      Sector: ${data.resumen.sector}<br>
+      Alertas: ${data.resumen.total_alertas}<br>
+      Advertencias: ${data.resumen.total_advertencias}<br><br>
+      <b>Producto más donado:</b> ${data.mas_frecuente?.producto || "-"}<br>
+      <b>Producto más en RAG (eventos):</b> ${data.mas_rag?.producto || "-"}<br>
+      <b>Producto más en RAG (cantidad):</b> ${data.ranking?.[0]?.producto || "-"}
     </div>
   `;
 }
 
+/* ===============================
+   ALERTAS
+================================ */
 function renderAlertas(lista) {
-  if (!lista.length) return;
-  alertasDiv.innerHTML = `<h2>🔴 Alertas</h2>`;
-  lista.forEach(p => {
-    alertasDiv.innerHTML += cardProducto(p, "alerta");
-  });
-}
+  if (!lista || !lista.length) return;
 
-function renderAdvertencias(lista) {
-  if (!lista.length) return;
-  advertenciasDiv.innerHTML = `<h2>🟡 Advertencias</h2>`;
-  lista.forEach(p => {
-    advertenciasDiv.innerHTML += cardProducto(p, "advertencia");
-  });
-}
+  output.innerHTML += `<div class="titulo">🔴 Alertas</div>`;
 
-function renderRanking(lista) {
-  if (!lista.length) return;
-  rankingDiv.innerHTML = `<h2>📊 Ranking de impacto</h2>`;
-  lista.forEach((p, i) => {
-    rankingDiv.innerHTML += `
-      <div class="card">
-        <b>#${i + 1} ${p.producto}</b><br>
-        SKU: ${p.sku}<br>
-        Acumulado: ${p.acumulado} ${p.unidad}<br>
-        Evento máx: ${p.maxEvento}
+  lista.forEach(i => {
+    output.innerHTML += `
+      <div class="card alerta">
+        <b>${i.producto} (${i.sku})</b><br>
+        Evento máx: 1<br>
+        Acumulado: ${i.cantidad_acumulada_periodo} ${i.unidad}
       </div>
     `;
   });
 }
 
-function cardProducto(p, tipo) {
-  return `
-    <div class="card ${tipo}">
-      <b>${p.producto} (${p.sku})</b><br>
-      <span class="muted">${p.motivo}</span><br>
-      Evento máx: ${p.cantidad_evento_max} ${p.unidad}<br>
-      Acumulado período: ${p.cantidad_acumulada_periodo}
-    </div>
-  `;
-}
-</script>
+/* ===============================
+   ADVERTENCIAS
+================================ */
+function renderAdvertencias(lista) {
+  if (!lista || !lista.length) return;
 
+  output.innerHTML += `<div class="titulo">🟡 Advertencias</div>`;
+
+  lista.forEach(i => {
+    output.innerHTML += `
+      <div class="card advertencia">
+        <b>${i.producto} (${i.sku})</b><br>
+        Evento máx: 1<br>
+        Acumulado: ${i.cantidad_acumulada_periodo} ${i.unidad}
+      </div>
+    `;
+  });
+}
+
+/* ===============================
+   RANKING (por cantidad)
+================================ */
+function renderRanking(lista) {
+  if (!lista || !lista.length) return;
+
+  lista.sort((a, b) => b.acumulado - a.acumulado);
+
+  output.innerHTML += `<div class="titulo">📊 Ranking de impacto</div>`;
+
+  lista.forEach((i, idx) => {
+    output.innerHTML += `
+      <div class="card">
+        ${idx + 1}. <b>${i.producto}</b> – ${i.acumulado} ${i.unidad}
+      </div>
+    `;
+  });
+}
+
+/* INIT */
+cargarSectores();
+</script>
 </body>
 </html>
