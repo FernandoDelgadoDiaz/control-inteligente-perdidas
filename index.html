@@ -1,249 +1,202 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>CONTROL INTELIGENTE DE PÉRDIDAS</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>Control Inteligente de Pérdidas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
 
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f3f4f6;
-      color: #111827;
+      background: #0f172a;
+      color: #e5e7eb;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
     header {
-      background: #0f172a;
-      color: white;
       padding: 16px 24px;
-      font-size: 20px;
-      font-weight: bold;
+      background: #020617;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
     }
 
     main {
-      padding: 24px;
-      width: 100%;
+      flex: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
-    .top-actions {
+    .controls {
       display: flex;
       gap: 12px;
-      margin-bottom: 24px;
       flex-wrap: wrap;
       align-items: center;
     }
 
-    .btn {
-      padding: 12px 18px;
-      border: none;
-      border-radius: 4px;
-      font-size: 14px;
+    select, button, input[type="file"] {
+      padding: 10px;
+      background: #020617;
+      color: #e5e7eb;
+      border: 1px solid #334155;
+      border-radius: 6px;
+    }
+
+    button {
       cursor: pointer;
     }
 
-    .btn-primary { background: #2563eb; color: white; }
-
-    select {
-      padding: 10px;
-      font-size: 14px;
-      border-radius: 4px;
-      border: 1px solid #d1d5db;
-      min-width: 200px;
+    button:hover {
+      background: #1e293b;
     }
 
-    select:disabled {
-      background: #e5e7eb;
-      color: #6b7280;
-      cursor: not-allowed;
+    .report-box {
+      flex: 1;
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 16px;
+      overflow-y: auto;
     }
-
-    input[type="file"] { display: none; }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 24px;
-    }
-
-    .card {
-      background: white;
-      padding: 20px;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    table th, table td {
-      padding: 10px;
-      border-bottom: 1px solid #e5e7eb;
-    }
-
-    table th { background: #f9fafb; }
-
-    .tag {
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .rag { background: #fee2e2; color: #991b1b; }
 
     .alert-red {
-      background: #fee2e2;
-      border-left: 6px solid #dc2626;
-      padding: 10px;
+      color: #fecaca;
+      background: #7f1d1d;
+      padding: 8px;
+      border-radius: 4px;
       margin-bottom: 8px;
-      font-size: 13px;
-    }
-
-    .alert-orange {
-      background: #ffedd5;
-      border-left: 6px solid #f97316;
-      padding: 10px;
-      margin-bottom: 8px;
-      font-size: 13px;
     }
 
     .alert-yellow {
-      background: #fef9c3;
-      border-left: 6px solid #eab308;
-      padding: 10px;
+      color: #fef3c7;
+      background: #92400e;
+      padding: 8px;
+      border-radius: 4px;
       margin-bottom: 8px;
-      font-size: 13px;
     }
 
-    @media (max-width: 1000px) {
-      .grid { grid-template-columns: 1fr; }
+    .ok {
+      color: #86efac;
+    }
+
+    footer {
+      padding: 10px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      border-top: 1px solid #1e293b;
     }
   </style>
 </head>
+
 <body>
 
 <header>
-  CONTROL INTELIGENTE DE PÉRDIDAS
+  <h1>Control Inteligente de Pérdidas – RAG & Donaciones</h1>
 </header>
 
 <main>
 
-  <!-- CONTROLES -->
-  <div class="top-actions">
+  <div class="controls">
 
-    <button class="btn btn-primary"
-      onclick="document.getElementById('fileInput').click()">
-      Subir archivo
-    </button>
-    <input type="file" id="fileInput">
+    <input type="file" />
 
-    <select>
-      <option>Reporte últimos 7 días</option>
-      <option>Reporte últimos 14 días</option>
-      <option>Reporte últimos 21 días</option>
-      <option selected>Reporte últimos 30 días</option>
-      <option>Reporte últimos 60 días</option>
-      <option>Reporte últimos 90 días</option>
-      <option>Reporte últimos 180 días</option>
+    <select id="periodo">
+      <option value="">Reporte por período</option>
+      <option value="7">Últimos 7 días</option>
+      <option value="14">Últimos 14 días</option>
+      <option value="21">Últimos 21 días</option>
+      <option value="30">Últimos 30 días</option>
+      <option value="60">Últimos 60 días</option>
+      <option value="90">Últimos 90 días</option>
+      <option value="180">Últimos 6 meses</option>
     </select>
 
-    <select id="alcance">
-      <option value="total" selected>Total sucursal</option>
-      <option value="sector">Sector específico</option>
+    <select id="sectorToggle" onchange="toggleSector()">
+      <option value="all">Sucursal completa</option>
+      <option value="one">Un sector</option>
     </select>
 
     <select id="sector" disabled>
-      <option>Lácteos y fiambres</option>
+      <option value="">Seleccionar sector</option>
       <option>Carnicería</option>
       <option>Verdulería</option>
-      <option>Panadería</option>
+      <option>Lácteos y Fiambres</option>
       <option>Congelados</option>
+      <option>Panadería</option>
       <option>Almacén</option>
       <option>Bebidas</option>
       <option>Limpieza</option>
       <option>Perfumería</option>
-      <option>No comestibles</option>
+      <option>No Comestibles</option>
       <option>Textil</option>
     </select>
 
+    <button onclick="generarReporte()">Generar reporte</button>
+
   </div>
 
-  <div class="grid">
-
-    <!-- EVENTOS -->
-    <div class="card">
-      <h3>Eventos detectados (demo)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Producto</th><th>Sector</th><th>Tipo</th><th>Cantidad</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Carne picada</td>
-            <td>Carnicería</td>
-            <td><span class="tag rag">RAG</span></td>
-            <td>28 kg</td>
-          </tr>
-          <tr>
-            <td>Yogur bebible</td>
-            <td>Lácteos y fiambres</td>
-            <td><span class="tag rag">RAG</span></td>
-            <td>26 u</td>
-          </tr>
-          <tr>
-            <td>Queso cremoso</td>
-            <td>Lácteos y fiambres</td>
-            <td><span class="tag rag">RAG</span></td>
-            <td>18 u</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- ALERTAS -->
-    <div class="card">
-      <h3>Alertas</h3>
-
-      <div class="alert-red">
-        🔴 Evento crítico: Carne picada superó 10 kg en un solo evento (28 kg)
-      </div>
-
-      <div class="alert-orange">
-        🟠 Alerta acumulada 30 días: Yogur bebible acumuló 26 unidades
-      </div>
-
-      <div class="alert-yellow">
-        🟡 Cerca del umbral: Queso cremoso acumula 18 unidades
-      </div>
-
-    </div>
-
+  <div class="report-box" id="resultado">
+    <p class="ok">Esperando carga de archivos y selección de reporte.</p>
   </div>
 
 </main>
 
-<script>
-  const alcance = document.getElementById("alcance");
-  const sector = document.getElementById("sector");
+<footer>
+  Demo offline – lógica preparada para datos reales
+</footer>
 
-  function actualizarSector() {
-    if (alcance.value === "sector") {
-      sector.disabled = false;
-    } else {
-      sector.disabled = true;
-      sector.selectedIndex = 0;
-    }
+<script>
+  function toggleSector() {
+    const toggle = document.getElementById("sectorToggle").value;
+    const sector = document.getElementById("sector");
+    sector.disabled = toggle !== "one";
   }
 
-  alcance.addEventListener("change", actualizarSector);
+  function generarReporte() {
+    const periodo = document.getElementById("periodo").value;
+    const sectorToggle = document.getElementById("sectorToggle").value;
+    const sector = document.getElementById("sector").value;
+    const box = document.getElementById("resultado");
+
+    box.innerHTML = "";
+
+    if (!periodo) {
+      box.innerHTML = "<div class='alert-yellow'>Seleccioná un período para el reporte.</div>";
+      return;
+    }
+
+    box.innerHTML += `<p>📊 Reporte últimos <strong>${periodo} días</strong></p>`;
+
+    if (sectorToggle === "one" && !sector) {
+      box.innerHTML += "<div class='alert-yellow'>Falta seleccionar sector.</div>";
+      return;
+    }
+
+    if (sectorToggle === "one") {
+      box.innerHTML += `<p>📍 Sector: <strong>${sector}</strong></p>`;
+    } else {
+      box.innerHTML += `<p>📍 Sector: <strong>Toda la sucursal</strong></p>`;
+    }
+
+    box.innerHTML += `
+      <div class="alert-red">🔴 ALERTA: Producto X superó 24 unidades en un solo evento.</div>
+      <div class="alert-yellow">🟡 Atención: Producto Y está cerca del umbral.</div>
+      <p class="ok">✔ Reporte generado correctamente (datos simulados).</p>
+    `;
+  }
 </script>
 
 </body>
