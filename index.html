@@ -1,204 +1,84 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <title>Control Inteligente de Pérdidas</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <style>
-    * {
-      box-sizing: border-box;
-      font-family: Arial, Helvetica, sans-serif;
-    }
-
-    body {
-      margin: 0;
-      background: #0f172a;
-      color: #e5e7eb;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-
-    header {
-      padding: 16px 24px;
-      background: #020617;
-      border-bottom: 1px solid #1e293b;
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 22px;
-    }
-
-    main {
-      flex: 1;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .controls {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    select, button, input[type="file"] {
-      padding: 10px;
-      background: #020617;
-      color: #e5e7eb;
-      border: 1px solid #334155;
-      border-radius: 6px;
-    }
-
-    button {
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #1e293b;
-    }
-
-    .report-box {
-      flex: 1;
-      background: #020617;
-      border: 1px solid #1e293b;
-      border-radius: 8px;
-      padding: 16px;
-      overflow-y: auto;
-    }
-
-    .alert-red {
-      color: #fecaca;
-      background: #7f1d1d;
-      padding: 8px;
-      border-radius: 4px;
-      margin-bottom: 8px;
-    }
-
-    .alert-yellow {
-      color: #fef3c7;
-      background: #92400e;
-      padding: 8px;
-      border-radius: 4px;
-      margin-bottom: 8px;
-    }
-
-    .ok {
-      color: #86efac;
-    }
-
-    footer {
-      padding: 10px;
-      text-align: center;
-      font-size: 12px;
-      color: #64748b;
-      border-top: 1px solid #1e293b;
-    }
-  </style>
-</head>
-
-<body>
-
-<header>
-  <h1>Control Inteligente de Pérdidas – RAG & Donaciones</h1>
-</header>
-
-<main>
-
-  <div class="controls">
-
-    <input type="file" />
-
-    <select id="periodo">
-      <option value="">Reporte por período</option>
-      <option value="7">Últimos 7 días</option>
-      <option value="14">Últimos 14 días</option>
-      <option value="21">Últimos 21 días</option>
-      <option value="30">Últimos 30 días</option>
-      <option value="60">Últimos 60 días</option>
-      <option value="90">Últimos 90 días</option>
-      <option value="180">Últimos 6 meses</option>
-    </select>
-
-    <select id="sectorToggle" onchange="toggleSector()">
-      <option value="all">Sucursal completa</option>
-      <option value="one">Un sector</option>
-    </select>
-
-    <select id="sector" disabled>
-      <option value="">Seleccionar sector</option>
-      <option>Carnicería</option>
-      <option>Verdulería</option>
-      <option>Lácteos y Fiambres</option>
-      <option>Congelados</option>
-      <option>Panadería</option>
-      <option>Almacén</option>
-      <option>Bebidas</option>
-      <option>Limpieza</option>
-      <option>Perfumería</option>
-      <option>No Comestibles</option>
-      <option>Textil</option>
-    </select>
-
-    <button onclick="generarReporte()">Generar reporte</button>
-
-  </div>
-
-  <div class="report-box" id="resultado">
-    <p class="ok">Esperando carga de archivos y selección de reporte.</p>
-  </div>
-
-</main>
-
-<footer>
-  Demo offline – lógica preparada para datos reales
-</footer>
-
 <script>
-  function toggleSector() {
-    const toggle = document.getElementById("sectorToggle").value;
-    const sector = document.getElementById("sector");
-    sector.disabled = toggle !== "one";
+const URL_GOOGLE_SCRIPT = "https://script.google.com/macros/s/AKfycby4QCiHE9BI496qmBwY7-ZnCFKUSkV1UPBXegu8xAnq18s4kFfgIBLCVaZtum585K6IUQ/exec";
+
+function toggleSector() {
+  const toggle = document.getElementById("sectorToggle").value;
+  const sector = document.getElementById("sector");
+  sector.disabled = toggle !== "one";
+}
+
+async function generarReporte() {
+  const periodo = document.getElementById("periodo").value;
+  const sectorToggle = document.getElementById("sectorToggle").value;
+  const sector = document.getElementById("sector").value;
+  const box = document.getElementById("resultado");
+
+  box.innerHTML = "";
+
+  if (!periodo) {
+    box.innerHTML = "<div class='alert-yellow'>Seleccioná un período.</div>";
+    return;
   }
 
-  function generarReporte() {
-    const periodo = document.getElementById("periodo").value;
-    const sectorToggle = document.getElementById("sectorToggle").value;
-    const sector = document.getElementById("sector").value;
-    const box = document.getElementById("resultado");
+  if (sectorToggle === "one" && !sector) {
+    box.innerHTML = "<div class='alert-yellow'>Seleccioná un sector.</div>";
+    return;
+  }
 
-    box.innerHTML = "";
+  box.innerHTML = `<p>📊 Reporte últimos <strong>${periodo} días</strong></p>`;
+  box.innerHTML += sectorToggle === "one"
+    ? `<p>📍 Sector: <strong>${sector}</strong></p>`
+    : `<p>📍 Sector: <strong>Toda la sucursal</strong></p>`;
 
-    if (!periodo) {
-      box.innerHTML = "<div class='alert-yellow'>Seleccioná un período para el reporte.</div>";
+  try {
+    const params = new URLSearchParams({
+      dias: periodo,
+      sector: sectorToggle === "one" ? sector : "ALL"
+    });
+
+    const response = await fetch(`${URL_GOOGLE_SCRIPT}?${params.toString()}`);
+    const data = await response.json();
+
+    if (!Array.isArray(data) || data.length === 0) {
+      box.innerHTML += "<p class='ok'>✔ No se detectaron alertas en el período.</p>";
       return;
     }
 
-    box.innerHTML += `<p>📊 Reporte últimos <strong>${periodo} días</strong></p>`;
+    let alertasRojas = 0;
+    let alertasAmarillas = 0;
 
-    if (sectorToggle === "one" && !sector) {
-      box.innerHTML += "<div class='alert-yellow'>Falta seleccionar sector.</div>";
-      return;
-    }
+    data.forEach(item => {
+      if (item.tipo === "ROJA") {
+        alertasRojas++;
+        box.innerHTML += `
+          <div class="alert-red">
+            🔴 ${item.descripcion}<br>
+            Producto: <strong>${item.producto}</strong><br>
+            Cantidad: ${item.cantidad} ${item.unidad}
+          </div>`;
+      }
 
-    if (sectorToggle === "one") {
-      box.innerHTML += `<p>📍 Sector: <strong>${sector}</strong></p>`;
-    } else {
-      box.innerHTML += `<p>📍 Sector: <strong>Toda la sucursal</strong></p>`;
-    }
+      if (item.tipo === "AMARILLA") {
+        alertasAmarillas++;
+        box.innerHTML += `
+          <div class="alert-yellow">
+            🟡 ${item.descripcion}<br>
+            Producto: <strong>${item.producto}</strong>
+          </div>`;
+      }
+    });
 
     box.innerHTML += `
-      <div class="alert-red">🔴 ALERTA: Producto X superó 24 unidades en un solo evento.</div>
-      <div class="alert-yellow">🟡 Atención: Producto Y está cerca del umbral.</div>
-      <p class="ok">✔ Reporte generado correctamente (datos simulados).</p>
+      <p class="ok">
+        ✔ Reporte generado correctamente.<br>
+        🔴 Alertas críticas: ${alertasRojas}<br>
+        🟡 Alertas preventivas: ${alertasAmarillas}
+      </p>
     `;
-  }
-</script>
 
-</body>
-</html>
+  } catch (error) {
+    box.innerHTML = "<div class='alert-red'>❌ Error al obtener datos reales.</div>";
+    console.error("Error fetch:", error);
+  }
+}
+</script>
