@@ -1,45 +1,59 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Control Inteligente de Pérdidas – RAG & Donaciones</title>
 
 <style>
 body{
   margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto;
-  background:#020617;
-  color:#e5e7eb;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+  background:linear-gradient(180deg,#020617,#020617 40%,#020617);
+  color:#fff;
 }
-.container{max-width:480px;margin:auto;padding:20px}
-h1{font-size:22px;margin-bottom:16px}
-
+.container{max-width:720px;margin:auto;padding:20px}
+h1{font-size:22px;margin-bottom:20px}
 select,button{
-  width:100%;padding:14px;border-radius:12px;
-  border:none;font-size:16px;margin-bottom:12px
+  width:100%;
+  padding:14px;
+  border-radius:12px;
+  border:none;
+  margin-bottom:12px;
+  font-size:16px;
 }
-button{background:#3b82f6;color:#fff;font-weight:600}
-
+button{
+  background:#3b82f6;
+  color:#fff;
+  font-weight:600;
+}
 .card{
-  background:#020617;
+  background:rgba(255,255,255,.06);
   border-radius:16px;
   padding:16px;
-  margin:12px 0;
-  box-shadow:0 10px 30px rgba(0,0,0,.4)
+  margin-bottom:14px;
 }
-.alert{border-left:6px solid #ef4444}
-.warn{border-left:6px solid #facc15}
-
-.title{font-weight:700;margin-bottom:6px}
-.muted{opacity:.7;font-size:14px}
-.section{margin-top:20px}
+.badge-red{border-left:6px solid #ef4444}
+.badge-yellow{border-left:6px solid #facc15}
+.section-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:20px 0 10px;
+  font-weight:700;
+}
+.rank-item{
+  background:rgba(255,255,255,.05);
+  padding:12px;
+  border-radius:12px;
+  margin-bottom:8px;
+}
+.small{opacity:.85;font-size:14px}
 </style>
 </head>
 
 <body>
 <div class="container">
-
 <h1>Control Inteligente de Pérdidas – RAG & Donaciones</h1>
 
 <select id="dias">
@@ -55,115 +69,108 @@ button{background:#3b82f6;color:#fff;font-weight:600}
 
 <button onclick="generar()">Generar reporte</button>
 
-<div id="out"></div>
-
+<div id="resultado"></div>
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxakcoust-d-geI214--f4NJy8C_VR0Dm5IYVbE_JRgHnMvE-wnZTSjQdxb3SzeDLICSQ/exec";
+const API_URL = "https://controldeperdidas.netlify.app/.netlify/functions/getEventos";
 
-function generar(){
-  const dias=document.getElementById("dias").value;
-  const sector=document.getElementById("sector").value;
-  fetch(`${API_URL}?dias=${dias}&sector=${sector}`)
-    .then(r=>r.json())
-    .then(render);
+async function generar(){
+  const dias = document.getElementById("dias").value;
+  const sector = document.getElementById("sector").value;
+  const cont = document.getElementById("resultado");
+  cont.innerHTML = "";
+
+  const res = await fetch(`${API_URL}?dias=${dias}&sector=${sector}`);
+  const data = await res.json();
+
+  renderResumen(data, dias, sector);
+  renderAlertas(data);
+  renderAdvertencias(data);
+  renderRanking(data);
+  cargarSectores(data);
 }
 
-function render(data){
-  const out=document.getElementById("out");
-  out.innerHTML="";
+function renderResumen(data,dias,sector){
+  const r = data.resumen || {};
+  const div = document.createElement("div");
+  div.className="card";
+  div.innerHTML=`
+    <strong>Resumen (${dias} días)</strong><br>
+    Sector: ${sector==="ALL"?"Toda la sucursal":sector}<br><br>
 
-  if(data.error){
-    out.innerHTML=`<div class="card alert">${data.error}</div>`;
-    return;
-  }
+    <strong>Producto más donado:</strong><br>
+    ${data.mas_donado ? 
+      `${data.mas_donado.producto} (SKU ${data.mas_donado.sku}) – ${data.mas_donado.acumulado}` 
+      : "—"}<br><br>
 
-  // cargar sectores una sola vez
-  const sel=document.getElementById("sector");
-  if(sel.options.length===1){
-    data.sectores.forEach(s=>{
-      const o=document.createElement("option");
-      o.value=s;o.text=s;
-      sel.appendChild(o);
-    });
-  }
+    <strong>Producto más en RAG (eventos):</strong><br>
+    ${data.mas_rag_eventos ?
+      `${data.mas_rag_eventos.producto} (SKU ${data.mas_rag_eventos.sku}) – ${data.mas_rag_eventos.eventos} evento(s)`
+      : "—"}<br><br>
 
-  // ===== RESUMEN =====
-  out.innerHTML+=`
-  <div class="card">
-    <div class="title">Resumen (${data.resumen.dias} días)</div>
-    Sector: ${data.resumen.sector}<br><br>
+    <strong>Producto más en RAG (cantidad):</strong><br>
+    ${data.mas_rag_cantidad ?
+      `${data.mas_rag_cantidad.producto} (SKU ${data.mas_rag_cantidad.sku}) – ${data.mas_rag_cantidad.acumulado}`
+      : "—"}
+  `;
+  resultado.appendChild(div);
+}
 
-    <b>Producto más donado:</b><br>
-    ${data.mas_donado
-      ? `${data.mas_donado.producto} (SKU ${data.mas_donado.sku}) – ${data.mas_donado.acumulado}`
-      : "—"
-    }<br><br>
+function renderAlertas(data){
+  if(!data.ranking) return;
+  const alertas = data.ranking.filter(p=>p.acumulado>10);
+  if(alertas.length===0) return;
 
-    <b>Producto más en RAG (eventos):</b><br>
-    ${data.mas_rag_eventos
-      ? `${data.mas_rag_eventos.producto} (SKU ${data.mas_rag_eventos.sku}) – ${data.mas_rag_eventos.eventos} evento(s)`
-      : "—"
-    }<br><br>
-
-    <b>Producto más en RAG (cantidad):</b><br>
-    ${data.mas_rag_cantidad
-      ? `${data.mas_rag_cantidad.producto} (SKU ${data.mas_rag_cantidad.sku}) – ${data.mas_rag_cantidad.acumulado}`
-      : "—"
-    }
-  </div>`;
-
-  // ===== ALERTAS / ADVERTENCIAS =====
-  const alertas=[];
-  const advertencias=[];
-  const UMBRAL=10;
-
-  data.ranking.forEach(p=>{
-    const cant=Number(p.acumulado);
-    if(cant>=UMBRAL) alertas.push(p);
-    else if(cant>=UMBRAL*0.8) advertencias.push(p);
+  resultado.innerHTML+=`<div class="section-title">🔴 Alertas</div>`;
+  alertas.forEach(p=>{
+    resultado.innerHTML+=`
+      <div class="card badge-red">
+        <strong>${p.producto}</strong><br>
+        SKU: ${p.sku}<br>
+        Evento máx: 1<br>
+        Acumulado: ${p.acumulado}
+      </div>`;
   });
+}
 
-  if(alertas.length){
-    out.innerHTML+=`<div class="section title">🔴 Alertas</div>`;
-    alertas.forEach(p=>{
-      out.innerHTML+=`
-      <div class="card alert">
-        <div class="title">${p.producto}</div>
+function renderAdvertencias(data){
+  if(!data.ranking) return;
+  const adv = data.ranking.filter(p=>p.acumulado<=10);
+  if(adv.length===0) return;
+
+  resultado.innerHTML+=`<div class="section-title">🟡 Advertencias</div>`;
+  adv.forEach(p=>{
+    resultado.innerHTML+=`
+      <div class="card badge-yellow">
+        <strong>${p.producto}</strong><br>
         SKU: ${p.sku}<br>
         Evento máx: 1<br>
         Acumulado: ${p.acumulado}
       </div>`;
-    });
-  }
+  });
+}
 
-  if(advertencias.length){
-    out.innerHTML+=`<div class="section title">🟡 Advertencias</div>`;
-    advertencias.forEach(p=>{
-      out.innerHTML+=`
-      <div class="card warn">
-        <div class="title">${p.producto}</div>
-        SKU: ${p.sku}<br>
-        Evento máx: 1<br>
-        Acumulado: ${p.acumulado}
-      </div>`;
-    });
-  }
-
-  // ===== RANKING =====
-  out.innerHTML+=`
-  <div class="section title">Ranking de impacto</div>
-  <div class="muted">Ordenado por cantidad total</div>`;
-
-  data.ranking
-    .sort((a,b)=>b.acumulado-a.acumulado)
-    .forEach((p,i)=>{
-      out.innerHTML+=`
-      <div class="card">
+function renderRanking(data){
+  if(!data.ranking || data.ranking.length===0) return;
+  resultado.innerHTML+=`
+    <div class="section-title">📊 Ranking de impacto</div>
+    <div class="small">Ordenado por cantidad total</div>`;
+  data.ranking.forEach((p,i)=>{
+    resultado.innerHTML+=`
+      <div class="rank-item">
         ${i+1}. ${p.producto} – ${p.acumulado}
       </div>`;
-    });
+  });
+}
+
+function cargarSectores(data){
+  if(!data.sectores) return;
+  const sel = document.getElementById("sector");
+  sel.innerHTML=`<option value="ALL">Toda la sucursal</option>`;
+  data.sectores.forEach(s=>{
+    sel.innerHTML+=`<option value="${s}">${s}</option>`;
+  });
 }
 </script>
 </body>
