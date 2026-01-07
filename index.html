@@ -11,218 +11,103 @@ body{margin:0;background:#0b1220;color:#e5e7eb}
 header{padding:16px;background:#020617;border-bottom:1px solid #1e293b}
 h1{margin:0;font-size:20px}
 main{padding:16px;display:flex;flex-direction:column;gap:14px}
-
 select,button{
-  padding:10px;
-  border-radius:8px;
-  background:#020617;
-  color:#e5e7eb;
-  border:1px solid #334155
+  padding:10px;border-radius:8px;
+  background:#020617;color:#e5e7eb;border:1px solid #334155
 }
 button{cursor:pointer}
 button:hover{background:#1e293b}
-
-.panel{
-  background:#020617;
-  border:1px solid #1e293b;
-  border-radius:12px;
-  padding:14px
-}
-
+.panel{background:#020617;border:1px solid #1e293b;border-radius:12px;padding:14px}
 .alerta{border-left:5px solid #dc2626}
 .advertencia{border-left:5px solid #facc15}
-
-.item{
-  margin-top:8px;
-  padding:10px;
-  border-radius:8px;
-  background:#020617;
-  border:1px solid #1e293b
-}
-
-h3{margin:6px 0}
+.item{margin-top:8px;padding:10px;border-radius:8px;background:#020617;border:1px solid #1e293b}
 small{color:#9ca3af}
-
-.error{
-  background:#7f1d1d;
-  padding:10px;
-  border-radius:8px;
-  border-left:5px solid red
-}
+.error{background:#7f1d1d;padding:10px;border-radius:8px;border-left:5px solid red}
 </style>
 </head>
 
 <body>
 
 <header>
-  <h1>Control Inteligente de Pérdidas – RAG & Donaciones</h1>
+<h1>Control Inteligente de Pérdidas – RAG & Donaciones</h1>
 </header>
 
 <main>
 
-  <div class="panel">
-    <select id="dias">
-      <option value="7">Últimos 7 días</option>
-      <option value="14">Últimos 14 días</option>
-      <option value="30">Últimos 30 días</option>
-      <option value="60">Últimos 60 días</option>
-      <option value="90">Últimos 90 días</option>
-      <option value="180">Últimos 6 meses</option>
-    </select>
+<div class="panel">
+  <select id="dias">
+    <option value="7">Últimos 7 días</option>
+    <option value="14">Últimos 14 días</option>
+    <option value="30">Últimos 30 días</option>
+    <option value="60">Últimos 60 días</option>
+    <option value="90">Últimos 90 días</option>
+    <option value="180">Últimos 6 meses</option>
+  </select>
 
-    <select id="sector">
-      <option value="ALL">Toda la sucursal</option>
-    </select>
+  <select id="sector">
+    <option value="ALL">Toda la sucursal</option>
+  </select>
 
-    <button onclick="generarReporte()">Generar reporte</button>
-  </div>
+  <button onclick="generarReporte()">Generar reporte</button>
+</div>
 
-  <div id="resultado"></div>
+<div id="resultado"></div>
 
 </main>
 
 <script>
-/* ===============================
-   CONFIGURACIÓN PRODUCCIÓN
-   =============================== */
+/* ===== CONFIG PRODUCCIÓN ===== */
 const API_URL =
 "https://script.google.com/macros/s/AKfycby2zsqYco70CIqQ6Pqonw7ldxMF38_2gru9aCJJ3BwX/exec";
 
-/* ===============================
-   CARGA DE SECTORES
-   =============================== */
+/* ===== CARGA SECTORES ===== */
 async function cargarSectores(){
-  try{
-    const res = await fetch(`${API_URL}?dias=7&sector=ALL`);
-    const data = await res.json();
-
-    if(data.sectores && Array.isArray(data.sectores)){
-      const select = document.getElementById("sector");
-      data.sectores.forEach(s=>{
-        const opt = document.createElement("option");
-        opt.value = s;
-        opt.textContent = s;
-        select.appendChild(opt);
-      });
-    }
-  }catch(e){
-    console.error("Error cargando sectores", e);
+  const res = await fetch(`${API_URL}?dias=7&sector=ALL`);
+  const data = await res.json();
+  if(data.sectores){
+    const sel = document.getElementById("sector");
+    data.sectores.forEach(s=>{
+      const o=document.createElement("option");
+      o.value=s;o.textContent=s;sel.appendChild(o);
+    });
   }
 }
 
-/* ===============================
-   GENERAR REPORTE
-   =============================== */
+/* ===== REPORTE ===== */
 async function generarReporte(){
-  const dias = document.getElementById("dias").value;
-  const sector = document.getElementById("sector").value;
-  const box = document.getElementById("resultado");
+  const dias=document.getElementById("dias").value;
+  const sector=document.getElementById("sector").value;
+  const box=document.getElementById("resultado");
 
-  box.innerHTML = `<div class="panel">Generando reporte…</div>`;
+  box.innerHTML="<div class='panel'>Generando reporte…</div>";
 
   try{
-    const res = await fetch(`${API_URL}?dias=${dias}&sector=${encodeURIComponent(sector)}`);
-    const d = await res.json();
+    const res=await fetch(`${API_URL}?dias=${dias}&sector=${encodeURIComponent(sector)}`);
+    const d=await res.json();
 
-    if(d.error){
-      box.innerHTML = `<div class="error">${d.error}</div>`;
-      return;
+    if(d.error){box.innerHTML=`<div class='error'>${d.error}</div>`;return;}
+
+    let h=`<div class='panel'><b>${d.resumen.dias} días</b> · ${d.resumen.sector}<br>
+    🔴 Alertas: ${d.resumen.total_alertas} | 🟡 Advertencias: ${d.resumen.total_advertencias}</div>`;
+
+    if(d.alertas?.length){
+      h+=`<div class='panel alerta'><b>🔴 ALERTAS</b>`;
+      d.alertas.forEach(a=>h+=`<div class='item'><b>${a.producto}</b><br>${a.cantidad_evento_max} ${a.unidad}</div>`);
+      h+=`</div>`;
     }
 
-    let html = `
-      <div class="panel">
-        <h3>📊 Resumen</h3>
-        <small>${d.resumen.dias} días · ${d.resumen.sector}</small>
-        <p>🔴 Alertas: <strong>${d.resumen.total_alertas}</strong> |
-           🟡 Advertencias: <strong>${d.resumen.total_advertencias}</strong></p>
-      </div>
-    `;
-
-    /* ALERTAS */
-    if(d.alertas && d.alertas.length){
-      html += `<div class="panel alerta"><h3>🔴 Alertas</h3>`;
-      d.alertas.forEach(a=>{
-        html += `
-          <div class="item">
-            <strong>${a.producto}</strong> (${a.sku})<br>
-            Evento máx: ${a.cantidad_evento_max} ${a.unidad}<br>
-            Acumulado: ${a.cantidad_acumulada_periodo}
-          </div>
-        `;
-      });
-      html += `</div>`;
+    if(d.advertencias?.length){
+      h+=`<div class='panel advertencia'><b>🟡 ADVERTENCIAS</b>`;
+      d.advertencias.forEach(a=>h+=`<div class='item'><b>${a.producto}</b><br>${a.cantidad_evento_max} ${a.unidad}</div>`);
+      h+=`</div>`;
     }
 
-    /* ADVERTENCIAS */
-    if(d.advertencias && d.advertencias.length){
-      html += `<div class="panel advertencia"><h3>🟡 Advertencias</h3>`;
-      d.advertencias.forEach(a=>{
-        html += `
-          <div class="item">
-            <strong>${a.producto}</strong> (${a.sku})<br>
-            Evento máx: ${a.cantidad_evento_max} ${a.unidad}<br>
-            Acumulado: ${a.cantidad_acumulada_periodo}
-          </div>
-        `;
-      });
-      html += `</div>`;
-    }
-
-    if((!d.alertas || !d.alertas.length) && (!d.advertencias || !d.advertencias.length)){
-      html += `<div class="panel"><small>✔ Sin alertas ni advertencias en el período.</small></div>`;
-    }
-
-    /* RANKING */
-    if(d.ranking && d.ranking.length){
-      html += `<div class="panel"><h3>📈 Ranking del período</h3>`;
-      d.ranking.forEach(r=>{
-        html += `
-          <div class="item">
-            <strong>${r.producto}</strong> (${r.sku})<br>
-            Acumulado: ${r.acumulado} ${r.unidad} · Eventos: ${r.eventos}
-          </div>
-        `;
-      });
-      html += `</div>`;
-    }
-
-    /* MÁS FRECUENTE */
-    if(d.mas_frecuente){
-      html += `
-        <div class="panel">
-          <h3>🔁 Producto más frecuente</h3>
-          <div class="item">
-            ${d.mas_frecuente.producto} (${d.mas_frecuente.sku})<br>
-            Eventos: ${d.mas_frecuente.eventos} · Acumulado: ${d.mas_frecuente.acumulado}
-          </div>
-        </div>
-      `;
-    }
-
-    /* MÁS RAG */
-    if(d.mas_rag){
-      html += `
-        <div class="panel">
-          <h3>⚠️ Producto con más RAG</h3>
-          <div class="item">
-            ${d.mas_rag.producto} (${d.mas_rag.sku})<br>
-            Veces en RAG: ${d.mas_rag.rag}
-          </div>
-        </div>
-      `;
-    }
-
-    box.innerHTML = html;
-
-  }catch(err){
-    box.innerHTML = `<div class="error">Error real al generar reporte</div>`;
-    console.error(err);
+    box.innerHTML=h;
+  }catch(e){
+    box.innerHTML="<div class='error'>Error real al generar reporte</div>";
   }
 }
 
-/* ===============================
-   INIT
-   =============================== */
 cargarSectores();
 </script>
 
