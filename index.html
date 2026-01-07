@@ -1,10 +1,9 @@
 <script>
-const URL_GOOGLE_SCRIPT = "https://script.google.com/macros/s/AKfycby4QCiHE9BI496qmBwY7-ZnCFKUSkV1UPBXegu8xAnq18s4kFfgIBLCVaZtum585K6IUQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby4QCiHE9BI496qmBwY7-ZnCFKUSkV1UPBXegu8xAnq18s4kFfgIBLCVaZtum585K6IUQ/exec";
 
 function toggleSector() {
   const toggle = document.getElementById("sectorToggle").value;
-  const sector = document.getElementById("sector");
-  sector.disabled = toggle !== "one";
+  document.getElementById("sector").disabled = toggle !== "one";
 }
 
 async function generarReporte() {
@@ -20,65 +19,49 @@ async function generarReporte() {
     return;
   }
 
-  if (sectorToggle === "one" && !sector) {
-    box.innerHTML = "<div class='alert-yellow'>Seleccioná un sector.</div>";
-    return;
-  }
-
-  box.innerHTML = `<p>📊 Reporte últimos <strong>${periodo} días</strong></p>`;
-  box.innerHTML += sectorToggle === "one"
-    ? `<p>📍 Sector: <strong>${sector}</strong></p>`
-    : `<p>📍 Sector: <strong>Toda la sucursal</strong></p>`;
-
   try {
-    const params = new URLSearchParams({
-      dias: periodo,
-      sector: sectorToggle === "one" ? sector : "ALL"
-    });
+    box.innerHTML = "<p>⏳ Cargando datos reales...</p>";
 
-    const response = await fetch(`${URL_GOOGLE_SCRIPT}?${params.toString()}`);
-    const data = await response.json();
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error("Error al consultar Google Script");
+
+    const data = await res.json();
 
     if (!Array.isArray(data) || data.length === 0) {
-      box.innerHTML += "<p class='ok'>✔ No se detectaron alertas en el período.</p>";
+      box.innerHTML = "<p class='ok'>✔ No hay datos para el período seleccionado.</p>";
       return;
     }
 
-    let alertasRojas = 0;
-    let alertasAmarillas = 0;
+    box.innerHTML = `
+      <p>📊 Reporte últimos <strong>${periodo} días</strong></p>
+      <p>📍 Sector: <strong>${sectorToggle === "one" ? sector : "Toda la sucursal"}</strong></p>
+    `;
 
-    data.forEach(item => {
-      if (item.tipo === "ROJA") {
-        alertasRojas++;
+    let alertas = 0;
+
+    data.forEach(row => {
+      if (Number(row.Cantidad) >= 24) {
+        alertas++;
         box.innerHTML += `
           <div class="alert-red">
-            🔴 ${item.descripcion}<br>
-            Producto: <strong>${item.producto}</strong><br>
-            Cantidad: ${item.cantidad} ${item.unidad}
-          </div>`;
-      }
-
-      if (item.tipo === "AMARILLA") {
-        alertasAmarillas++;
-        box.innerHTML += `
-          <div class="alert-yellow">
-            🟡 ${item.descripcion}<br>
-            Producto: <strong>${item.producto}</strong>
-          </div>`;
+            🔴 ${row.Descripcion_pro} – ${row.Cantidad} ${row.Unidad}
+          </div>
+        `;
       }
     });
 
-    box.innerHTML += `
-      <p class="ok">
-        ✔ Reporte generado correctamente.<br>
-        🔴 Alertas críticas: ${alertasRojas}<br>
-        🟡 Alertas preventivas: ${alertasAmarillas}
-      </p>
-    `;
+    if (alertas === 0) {
+      box.innerHTML += "<p class='ok'>✔ No se detectaron alertas.</p>";
+    }
 
-  } catch (error) {
-    box.innerHTML = "<div class='alert-red'>❌ Error al obtener datos reales.</div>";
-    console.error("Error fetch:", error);
+  } catch (err) {
+    console.error(err);
+    box.innerHTML = `
+      <div class="alert-red">
+        ❌ Error cargando datos reales.<br>
+        Revisá la URL del Google Script o permisos.
+      </div>
+    `;
   }
 }
 </script>
