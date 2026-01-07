@@ -7,6 +7,7 @@
 
   <style>
     * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; }
+
     body {
       margin: 0;
       background: #0f172a;
@@ -15,12 +16,18 @@
       display: flex;
       flex-direction: column;
     }
+
     header {
       padding: 16px 24px;
       background: #020617;
       border-bottom: 1px solid #1e293b;
     }
-    header h1 { margin: 0; font-size: 22px; }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
     main {
       flex: 1;
       padding: 20px;
@@ -28,12 +35,14 @@
       flex-direction: column;
       gap: 16px;
     }
+
     .controls {
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
       align-items: center;
     }
+
     select, button {
       padding: 10px;
       background: #020617;
@@ -41,8 +50,15 @@
       border: 1px solid #334155;
       border-radius: 6px;
     }
-    button { cursor: pointer; }
-    button:hover { background: #1e293b; }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1e293b;
+    }
+
     .report-box {
       flex: 1;
       background: #020617;
@@ -51,6 +67,7 @@
       padding: 16px;
       overflow-y: auto;
     }
+
     .alert-red {
       background: #7f1d1d;
       color: #fecaca;
@@ -58,6 +75,7 @@
       border-radius: 6px;
       margin-bottom: 8px;
     }
+
     .alert-yellow {
       background: #92400e;
       color: #fef3c7;
@@ -65,7 +83,11 @@
       border-radius: 6px;
       margin-bottom: 8px;
     }
-    .ok { color: #86efac; }
+
+    .ok {
+      color: #86efac;
+    }
+
     footer {
       padding: 10px;
       text-align: center;
@@ -77,12 +99,15 @@
 </head>
 
 <body>
+
 <header>
   <h1>Control Inteligente de Pérdidas – RAG & Donaciones</h1>
 </header>
 
 <main>
+
   <div class="controls">
+
     <select id="periodo">
       <option value="">Reporte por período</option>
       <option value="7">Últimos 7 días</option>
@@ -114,11 +139,13 @@
     </select>
 
     <button onclick="generarReporte()">Generar reporte</button>
+
   </div>
 
   <div class="report-box" id="resultado">
     <p class="ok">Esperando selección de reporte.</p>
   </div>
+
 </main>
 
 <footer>
@@ -126,8 +153,10 @@
 </footer>
 
 <script>
+/* ========= URL REAL DE GOOGLE APPS SCRIPT ========= */
 const URL_GOOGLE_SCRIPT =
-  "https://script.google.com/macros/s/AKfycby4QCiHE9BI496qmBwY7-ZnCFKUSkV1UPBXegu8xAnq18s4kFfgIBLCVaZtum585K6IUQ/exec";
+"https://script.google.com/macros/s/AKfycbwvZg_qQzQ-Y8qX_ofD2THYzDDl7cSzMlKStmVhUwY3T8NOUMXwlD3QNSgUODA0lwHfHQ/exec";
+/* ================================================= */
 
 function toggleSector() {
   const toggle = document.getElementById("sectorToggle").value;
@@ -146,6 +175,7 @@ async function generarReporte() {
     box.innerHTML = `<div class="alert-yellow">Seleccioná un período.</div>`;
     return;
   }
+
   if (sectorToggle === "one" && !sector) {
     box.innerHTML = `<div class="alert-yellow">Seleccioná un sector.</div>`;
     return;
@@ -159,21 +189,21 @@ async function generarReporte() {
       sector: sectorToggle === "one" ? sector : "ALL"
     });
 
-    const res = await fetch(`${URL_GOOGLE_SCRIPT}?${params}`);
-    const data = await res.json();
+    const response = await fetch(`${URL_GOOGLE_SCRIPT}?${params}`);
+    const data = await response.json();
 
     box.innerHTML = `
       <p>📊 Reporte últimos <strong>${periodo} días</strong></p>
       <p>📍 Sector: <strong>${sectorToggle === "one" ? sector : "Toda la sucursal"}</strong></p>
     `;
 
-    if (data.alertas?.length) {
+    if (data.alertas && data.alertas.length) {
       data.alertas.forEach(a => {
         box.innerHTML += `<div class="alert-red">🔴 ${a}</div>`;
       });
     }
 
-    if (data.advertencias?.length) {
+    if (data.advertencias && data.advertencias.length) {
       data.advertencias.forEach(a => {
         box.innerHTML += `<div class="alert-yellow">🟡 ${a}</div>`;
       });
@@ -181,10 +211,11 @@ async function generarReporte() {
 
     box.innerHTML += `<p class="ok">✔ Reporte generado con datos reales.</p>`;
 
-  } catch (err) {
-    box.innerHTML = `<div class="alert-red">Error al obtener datos: ${err.message}</div>`;
+  } catch (error) {
+    box.innerHTML = `<div class="alert-red">Error al obtener datos: ${error.message}</div>`;
   }
 }
 </script>
+
 </body>
 </html>
