@@ -79,7 +79,7 @@ function render(data){
     return;
   }
 
-  // sectores
+  // cargar sectores una sola vez
   const sel=document.getElementById("sector");
   if(sel.options.length===1){
     data.sectores.forEach(s=>{
@@ -89,28 +89,40 @@ function render(data){
     });
   }
 
-  // resumen
+  // ===== RESUMEN =====
   out.innerHTML+=`
   <div class="card">
     <div class="title">Resumen (${data.resumen.dias} días)</div>
     Sector: ${data.resumen.sector}<br><br>
-    <b>Producto más donado:</b> ${data.mas_donado?.producto || "—"}<br>
-    <b>Producto más en RAG (eventos):</b> ${data.mas_rag_eventos?.producto || "—"}<br>
-    <b>Producto más en RAG (cantidad):</b> ${data.mas_rag_cantidad?.producto || "—"}
+
+    <b>Producto más donado:</b><br>
+    ${data.mas_donado
+      ? `${data.mas_donado.producto} (SKU ${data.mas_donado.sku}) – ${data.mas_donado.acumulado}`
+      : "—"
+    }<br><br>
+
+    <b>Producto más en RAG (eventos):</b><br>
+    ${data.mas_rag_eventos
+      ? `${data.mas_rag_eventos.producto} (SKU ${data.mas_rag_eventos.sku}) – ${data.mas_rag_eventos.eventos} evento(s)`
+      : "—"
+    }<br><br>
+
+    <b>Producto más en RAG (cantidad):</b><br>
+    ${data.mas_rag_cantidad
+      ? `${data.mas_rag_cantidad.producto} (SKU ${data.mas_rag_cantidad.sku}) – ${data.mas_rag_cantidad.acumulado}`
+      : "—"
+    }
   </div>`;
 
+  // ===== ALERTAS / ADVERTENCIAS =====
   const alertas=[];
   const advertencias=[];
+  const UMBRAL=10;
 
   data.ranking.forEach(p=>{
     const cant=Number(p.acumulado);
-    const umbral=10;
-
-    if(cant>=umbral){
-      alertas.push(p);
-    }else if(cant>=umbral*0.8){
-      advertencias.push(p);
-    }
+    if(cant>=UMBRAL) alertas.push(p);
+    else if(cant>=UMBRAL*0.8) advertencias.push(p);
   });
 
   if(alertas.length){
@@ -118,7 +130,8 @@ function render(data){
     alertas.forEach(p=>{
       out.innerHTML+=`
       <div class="card alert">
-        <div class="title">${p.producto} (${p.sku})</div>
+        <div class="title">${p.producto}</div>
+        SKU: ${p.sku}<br>
         Evento máx: 1<br>
         Acumulado: ${p.acumulado}
       </div>`;
@@ -130,28 +143,27 @@ function render(data){
     advertencias.forEach(p=>{
       out.innerHTML+=`
       <div class="card warn">
-        <div class="title">${p.producto} (${p.sku})</div>
+        <div class="title">${p.producto}</div>
+        SKU: ${p.sku}<br>
         Evento máx: 1<br>
         Acumulado: ${p.acumulado}
       </div>`;
     });
   }
 
-  // ranking
-  const rankingOrdenado=[...data.ranking]
-    .map(p=>({...p,acumulado:Number(p.acumulado)}))
-    .sort((a,b)=>b.acumulado-a.acumulado);
-
+  // ===== RANKING =====
   out.innerHTML+=`
   <div class="section title">Ranking de impacto</div>
   <div class="muted">Ordenado por cantidad total</div>`;
 
-  rankingOrdenado.forEach((p,i)=>{
-    out.innerHTML+=`
-    <div class="card">
-      ${i+1}. ${p.producto} – ${p.acumulado}
-    </div>`;
-  });
+  data.ranking
+    .sort((a,b)=>b.acumulado-a.acumulado)
+    .forEach((p,i)=>{
+      out.innerHTML+=`
+      <div class="card">
+        ${i+1}. ${p.producto} – ${p.acumulado}
+      </div>`;
+    });
 }
 </script>
 </body>
