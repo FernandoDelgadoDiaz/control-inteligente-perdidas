@@ -73,6 +73,10 @@ footer{
 
   <select id="sector">
     <option value="ALL">Toda la sucursal</option>
+    <option value="CARNICERIA">Carnicería</option>
+    <option value="VERDULERIA">Verdulería</option>
+    <option value="FIAMBRES Y LACTEOS">Fiambres y Lácteos</option>
+    <option value="ALMACEN">Almacén</option>
   </select>
 
   <button onclick="generar()">Generar reporte</button>
@@ -90,69 +94,54 @@ Control inteligente · Datos en tiempo real
 const URL_API =
 "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLinSnPuChMLpmL3HLTh7jyvjRx1e1wfH8tohBdYcJilAIhxFexmJFaDFnUKYR6dtZtdKNcPcDXzUohPZua9NULr_J14K3LIR2IjnOnDiohh0Q38HLTk1LI33BME60E4jgmmDCPrgILNPn9JufNln9Od0WH9iMGi3Y14WDUygyg3M8AsYZuK38Y6jQScEpJk_Iq8d2iK6Kce9kZPeqq8hkebC4pbxrl50OR60as1S1gTGjilX-ROxRKSkKGlMg&lib=MZrD42Mo3kLRTVRl9Hx16jtuNG_C6aXEm";
 
-/* CARGAR SECTORES DINÁMICOS */
-fetch(URL_API)
-  .then(r=>r.json())
-  .then(d=>{
-    if(d.sectores){
-      const sel=document.getElementById("sector");
-      d.sectores.forEach(s=>{
-        const o=document.createElement("option");
-        o.value=s;
-        o.textContent=s;
-        sel.appendChild(o);
-      });
-    }
-  });
-
 async function generar(){
   const dias = document.getElementById("dias").value;
   const sector = document.getElementById("sector").value;
-
   const box = document.getElementById("resultado");
+
   box.innerHTML = `<div class="section"><span class="muted">Generando reporte…</span></div>`;
 
-  const res = await fetch(`${URL_API}&dias=${dias}&sector=${sector}`);
-  const data = await res.json();
+  try{
+    const res = await fetch(`${URL_API}&dias=${dias}&sector=${encodeURIComponent(sector)}`);
+    const data = await res.json();
+    box.innerHTML = "";
 
-  box.innerHTML = "";
+    box.innerHTML += `
+      <div class="section">
+        <div class="section-title">📊 Resumen últimos ${dias} días</div>
+        Alertas: <strong>${data.resumen.total_alertas}</strong> |
+        Advertencias: <strong>${data.resumen.total_advertencias}</strong>
+      </div>`;
 
-  /* RESUMEN */
-  box.innerHTML += `
-  <div class="section">
-    <div class="section-title">📊 Resumen últimos ${dias} días</div>
-    Alertas: <strong>${data.resumen.total_alertas}</strong> |
-    Advertencias: <strong>${data.resumen.total_advertencias}</strong>
-  </div>`;
+    if(data.alertas.length){
+      box.innerHTML += `<div class="section red"><div class="section-title">🔴 Alertas</div></div>`;
+      data.alertas.forEach(p => box.innerHTML += card(p));
+    }
 
-  /* ALERTAS */
-  if(data.alertas.length){
-    box.innerHTML += `<div class="section red"><div class="section-title">🔴 Alertas</div></div>`;
-    data.alertas.forEach(p => box.innerHTML += card(p));
-  }
+    if(data.advertencias.length){
+      box.innerHTML += `<div class="section yellow"><div class="section-title">🟡 Advertencias</div></div>`;
+      data.advertencias.forEach(p => box.innerHTML += card(p));
+    }
 
-  /* ADVERTENCIAS */
-  if(data.advertencias.length){
-    box.innerHTML += `<div class="section yellow"><div class="section-title">🟡 Advertencias</div></div>`;
-    data.advertencias.forEach(p => box.innerHTML += card(p));
-  }
+    if(!data.alertas.length && !data.advertencias.length){
+      box.innerHTML += `<div class="section"><span class="muted">✔ Sin alertas ni advertencias en el período.</span></div>`;
+    }
 
-  if(!data.alertas.length && !data.advertencias.length){
-    box.innerHTML += `<div class="section"><span class="muted">✔ Sin alertas ni advertencias en el período seleccionado.</span></div>`;
-  }
+    if(data.ranking?.length){
+      box.innerHTML += `<div class="section"><div class="section-title">📈 Ranking</div></div>`;
+      data.ranking.forEach(p => box.innerHTML += card(p));
+    }
 
-  /* RANKING */
-  if(data.ranking?.length){
-    box.innerHTML += `<div class="section"><div class="section-title">📈 Ranking</div></div>`;
-    data.ranking.forEach(p => box.innerHTML += card(p));
-  }
+    if(data.mas_frecuente){
+      box.innerHTML += `<div class="section"><div class="section-title">🔁 Producto más frecuente</div>${card(data.mas_frecuente)}</div>`;
+    }
 
-  if(data.mas_frecuente){
-    box.innerHTML += `<div class="section"><div class="section-title">🔁 Producto más frecuente</div>${card(data.mas_frecuente)}</div>`;
-  }
+    if(data.mas_rag){
+      box.innerHTML += `<div class="section"><div class="section-title">⚠️ Producto con más RAG</div>${card(data.mas_rag)}</div>`;
+    }
 
-  if(data.mas_rag){
-    box.innerHTML += `<div class="section"><div class="section-title">⚠️ Producto con más RAG</div>${card(data.mas_rag)}</div>`;
+  } catch(e){
+    box.innerHTML = `<div class="section red">❌ Error al generar reporte</div>`;
   }
 }
 
