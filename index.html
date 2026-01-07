@@ -6,7 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
-    * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; }
+    * {
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
 
     body {
       margin: 0;
@@ -125,17 +128,17 @@
 
     <select id="sector" disabled>
       <option value="">Seleccionar sector</option>
-      <option>Carnicería</option>
-      <option>Verdulería</option>
-      <option>Lácteos y Fiambres</option>
-      <option>Congelados</option>
-      <option>Panadería</option>
-      <option>Almacén</option>
-      <option>Bebidas</option>
-      <option>Limpieza</option>
-      <option>Perfumería</option>
-      <option>No Comestibles</option>
-      <option>Textil</option>
+      <option>CARNICERÍA</option>
+      <option>VERDULERÍA</option>
+      <option>LÁCTEOS Y FIAMBRES</option>
+      <option>CONGELADOS</option>
+      <option>PANADERÍA</option>
+      <option>ALMACÉN</option>
+      <option>BEBIDAS</option>
+      <option>LIMPIEZA</option>
+      <option>PERFUMERÍA</option>
+      <option>NO COMESTIBLES</option>
+      <option>TEXTIL</option>
     </select>
 
     <button onclick="generarReporte()">Generar reporte</button>
@@ -153,10 +156,11 @@
 </footer>
 
 <script>
-/* ========= URL REAL DE GOOGLE APPS SCRIPT ========= */
+/* ================================
+   URL GOOGLE APPS SCRIPT (FINAL)
+   ================================ */
 const URL_GOOGLE_SCRIPT =
-"https://script.google.com/macros/s/AKfycbwvZg_qQzQ-Y8qX_ofD2THYzDDl7cSzMlKStmVhUwY3T8NOUMXwlD3QNSgUODA0lwHfHQ/exec";
-/* ================================================= */
+  "https://script.google.com/macros/s/AKfycbwvZg_qQzQ-Y8qX_ofD2THYzDDl7cSzMlKStmVhUwY3T8NOUMXwlD3QNSgUODA0lwHfHQ/exec";
 
 function toggleSector() {
   const toggle = document.getElementById("sectorToggle").value;
@@ -186,11 +190,11 @@ async function generarReporte() {
   try {
     const params = new URLSearchParams({
       dias: periodo,
-      sector: sectorToggle === "one" ? sector : "ALL"
+      sector: sectorToggle === "one" ? sector.toUpperCase() : "ALL"
     });
 
-    const response = await fetch(`${URL_GOOGLE_SCRIPT}?${params}`);
-    const data = await response.json();
+    const res = await fetch(`${URL_GOOGLE_SCRIPT}?${params}`);
+    const data = await res.json();
 
     box.innerHTML = `
       <p>📊 Reporte últimos <strong>${periodo} días</strong></p>
@@ -209,10 +213,17 @@ async function generarReporte() {
       });
     }
 
+    if (
+      (!data.alertas || data.alertas.length === 0) &&
+      (!data.advertencias || data.advertencias.length === 0)
+    ) {
+      box.innerHTML += `<p class="ok">✔ Sin alertas en el período seleccionado.</p>`;
+    }
+
     box.innerHTML += `<p class="ok">✔ Reporte generado con datos reales.</p>`;
 
-  } catch (error) {
-    box.innerHTML = `<div class="alert-red">Error al obtener datos: ${error.message}</div>`;
+  } catch (err) {
+    box.innerHTML = `<div class="alert-red">Error al obtener datos: ${err.message}</div>`;
   }
 }
 </script>
