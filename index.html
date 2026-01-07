@@ -1,147 +1,230 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Control Inteligente de Pérdidas</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body {
-  margin:0;
-  background:#020617;
-  color:#e5e7eb;
-  font-family:Arial,Helvetica,sans-serif;
-}
-header {
-  padding:16px;
-  border-bottom:1px solid #1e293b;
-}
-main {
-  padding:16px;
-}
-select, button {
-  background:#020617;
-  color:#e5e7eb;
-  border:1px solid #334155;
+*{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+body{margin:0;background:#0b1220;color:#e5e7eb}
+header{padding:16px;background:#020617;border-bottom:1px solid #1e293b}
+h1{margin:0;font-size:20px}
+main{padding:16px;display:flex;flex-direction:column;gap:14px}
+
+select,button{
   padding:10px;
-  border-radius:6px;
-  margin-right:6px;
+  border-radius:8px;
+  background:#020617;
+  color:#e5e7eb;
+  border:1px solid #334155
 }
-button { cursor:pointer }
-.card {
+button{cursor:pointer}
+button:hover{background:#1e293b}
+
+.panel{
   background:#020617;
   border:1px solid #1e293b;
-  border-radius:8px;
-  padding:14px;
-  margin-top:14px;
+  border-radius:12px;
+  padding:14px
 }
-.alerta { border-left:6px solid #dc2626 }
-.warn { border-left:6px solid #facc15 }
-.ok { color:#22c55e }
-.error {
-  background:#7f1d1d;
-  color:#fecaca;
+
+.alerta{border-left:5px solid #dc2626}
+.advertencia{border-left:5px solid #facc15}
+
+.item{
+  margin-top:8px;
   padding:10px;
-  border-radius:6px;
+  border-radius:8px;
+  background:#020617;
+  border:1px solid #1e293b
+}
+
+h3{margin:6px 0}
+small{color:#9ca3af}
+
+.error{
+  background:#7f1d1d;
+  padding:10px;
+  border-radius:8px;
+  border-left:5px solid red
 }
 </style>
 </head>
 
 <body>
+
 <header>
-  <h2>Control Inteligente de Pérdidas – RAG & Donaciones</h2>
+  <h1>Control Inteligente de Pérdidas – RAG & Donaciones</h1>
 </header>
 
 <main>
-  <select id="dias">
-    <option value="7">7 días</option>
-    <option value="14">14 días</option>
-    <option value="30">30 días</option>
-  </select>
 
-  <select id="sector">
-    <option value="ALL">Toda la sucursal</option>
-  </select>
+  <div class="panel">
+    <select id="dias">
+      <option value="7">Últimos 7 días</option>
+      <option value="14">Últimos 14 días</option>
+      <option value="30">Últimos 30 días</option>
+      <option value="60">Últimos 60 días</option>
+      <option value="90">Últimos 90 días</option>
+      <option value="180">Últimos 6 meses</option>
+    </select>
 
-  <button onclick="generar()">Generar reporte</button>
+    <select id="sector">
+      <option value="ALL">Toda la sucursal</option>
+    </select>
 
-  <div id="out"></div>
+    <button onclick="generarReporte()">Generar reporte</button>
+  </div>
+
+  <div id="resultado"></div>
+
 </main>
 
 <script>
-const API_URL = "PEGÁ_ACÁ_TU_URL_GOOGLE_SCRIPT";
+/* ===============================
+   CONFIGURACIÓN PRODUCCIÓN
+   =============================== */
+const API_URL =
+"https://script.google.com/macros/s/AKfycby2zsqYco70CIqQ6Pqonw7ldxMF38_2gru9aCJJ3BwX/exec";
 
-async function generar() {
-  const out = document.getElementById("out");
-  out.innerHTML = "Cargando...";
-
-  try {
-    const dias = document.getElementById("dias").value;
-    const sector = document.getElementById("sector").value;
-
-    const res = await fetch(`${API_URL}?dias=${dias}&sector=${sector}`);
+/* ===============================
+   CARGA DE SECTORES
+   =============================== */
+async function cargarSectores(){
+  try{
+    const res = await fetch(`${API_URL}?dias=7&sector=ALL`);
     const data = await res.json();
 
-    if (data.error) {
-      out.innerHTML = `<div class="error">${data.error}</div>`;
+    if(data.sectores && Array.isArray(data.sectores)){
+      const select = document.getElementById("sector");
+      data.sectores.forEach(s=>{
+        const opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = s;
+        select.appendChild(opt);
+      });
+    }
+  }catch(e){
+    console.error("Error cargando sectores", e);
+  }
+}
+
+/* ===============================
+   GENERAR REPORTE
+   =============================== */
+async function generarReporte(){
+  const dias = document.getElementById("dias").value;
+  const sector = document.getElementById("sector").value;
+  const box = document.getElementById("resultado");
+
+  box.innerHTML = `<div class="panel">Generando reporte…</div>`;
+
+  try{
+    const res = await fetch(`${API_URL}?dias=${dias}&sector=${encodeURIComponent(sector)}`);
+    const d = await res.json();
+
+    if(d.error){
+      box.innerHTML = `<div class="error">${d.error}</div>`;
       return;
     }
 
-    // Cargar sectores dinámicos
-    const sel = document.getElementById("sector");
-    sel.innerHTML = `<option value="ALL">Toda la sucursal</option>`;
-    (data.sectores || []).forEach(s => {
-      sel.innerHTML += `<option value="${s}">${s}</option>`;
-    });
-
     let html = `
-      <div class="card">
-        <strong>Resumen</strong><br>
-        Alertas: ${data.resumen.total_alertas}<br>
-        Advertencias: ${data.resumen.total_advertencias}
+      <div class="panel">
+        <h3>📊 Resumen</h3>
+        <small>${d.resumen.dias} días · ${d.resumen.sector}</small>
+        <p>🔴 Alertas: <strong>${d.resumen.total_alertas}</strong> |
+           🟡 Advertencias: <strong>${d.resumen.total_advertencias}</strong></p>
       </div>
     `;
 
-    if (data.alertas.length) {
-      html += `<div class="card alerta"><strong>ALERTAS</strong>`;
-      data.alertas.forEach(a=>{
-        html+=`<p>${a.producto} (${a.sku}) – ${a.cantidad_evento_max} ${a.unidad}</p>`;
+    /* ALERTAS */
+    if(d.alertas && d.alertas.length){
+      html += `<div class="panel alerta"><h3>🔴 Alertas</h3>`;
+      d.alertas.forEach(a=>{
+        html += `
+          <div class="item">
+            <strong>${a.producto}</strong> (${a.sku})<br>
+            Evento máx: ${a.cantidad_evento_max} ${a.unidad}<br>
+            Acumulado: ${a.cantidad_acumulada_periodo}
+          </div>
+        `;
       });
-      html+=`</div>`;
+      html += `</div>`;
     }
 
-    if (data.advertencias.length) {
-      html += `<div class="card warn"><strong>ADVERTENCIAS</strong>`;
-      data.advertencias.forEach(a=>{
-        html+=`<p>${a.producto} (${a.sku}) – ${a.cantidad_evento_max} ${a.unidad}</p>`;
+    /* ADVERTENCIAS */
+    if(d.advertencias && d.advertencias.length){
+      html += `<div class="panel advertencia"><h3>🟡 Advertencias</h3>`;
+      d.advertencias.forEach(a=>{
+        html += `
+          <div class="item">
+            <strong>${a.producto}</strong> (${a.sku})<br>
+            Evento máx: ${a.cantidad_evento_max} ${a.unidad}<br>
+            Acumulado: ${a.cantidad_acumulada_periodo}
+          </div>
+        `;
       });
-      html+=`</div>`;
+      html += `</div>`;
     }
 
-    if (data.mas_frecuente) {
+    if((!d.alertas || !d.alertas.length) && (!d.advertencias || !d.advertencias.length)){
+      html += `<div class="panel"><small>✔ Sin alertas ni advertencias en el período.</small></div>`;
+    }
+
+    /* RANKING */
+    if(d.ranking && d.ranking.length){
+      html += `<div class="panel"><h3>📈 Ranking del período</h3>`;
+      d.ranking.forEach(r=>{
+        html += `
+          <div class="item">
+            <strong>${r.producto}</strong> (${r.sku})<br>
+            Acumulado: ${r.acumulado} ${r.unidad} · Eventos: ${r.eventos}
+          </div>
+        `;
+      });
+      html += `</div>`;
+    }
+
+    /* MÁS FRECUENTE */
+    if(d.mas_frecuente){
       html += `
-        <div class="card">
-          <strong>Producto más frecuente</strong><br>
-          ${data.mas_frecuente.producto}
+        <div class="panel">
+          <h3>🔁 Producto más frecuente</h3>
+          <div class="item">
+            ${d.mas_frecuente.producto} (${d.mas_frecuente.sku})<br>
+            Eventos: ${d.mas_frecuente.eventos} · Acumulado: ${d.mas_frecuente.acumulado}
+          </div>
         </div>
       `;
     }
 
-    if (data.mas_rag) {
+    /* MÁS RAG */
+    if(d.mas_rag){
       html += `
-        <div class="card">
-          <strong>Producto con más RAG</strong><br>
-          ${data.mas_rag.producto}
+        <div class="panel">
+          <h3>⚠️ Producto con más RAG</h3>
+          <div class="item">
+            ${d.mas_rag.producto} (${d.mas_rag.sku})<br>
+            Veces en RAG: ${d.mas_rag.rag}
+          </div>
         </div>
       `;
     }
 
-    out.innerHTML = html;
+    box.innerHTML = html;
 
-  } catch (e) {
-    out.innerHTML = `<div class="error">${e.message}</div>`;
+  }catch(err){
+    box.innerHTML = `<div class="error">Error real al generar reporte</div>`;
+    console.error(err);
   }
 }
+
+/* ===============================
+   INIT
+   =============================== */
+cargarSectores();
 </script>
+
 </body>
 </html>
