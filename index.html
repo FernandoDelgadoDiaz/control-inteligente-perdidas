@@ -9,26 +9,31 @@
 body{
   margin:0;
   font-family:system-ui,-apple-system,Segoe UI,Roboto;
-  background:linear-gradient(180deg,#020617,#020617 60%,#020617);
+  background:#020617;
   color:#e5e7eb;
 }
 .container{max-width:480px;margin:auto;padding:20px}
 h1{font-size:22px;margin-bottom:16px}
+
 select,button{
   width:100%;padding:14px;border-radius:12px;
   border:none;font-size:16px;margin-bottom:12px
 }
 button{background:#3b82f6;color:#fff;font-weight:600}
+
 .card{
-  background:linear-gradient(180deg,#020617,#020617);
-  border-radius:16px;padding:16px;margin:12px 0;
+  background:#020617;
+  border-radius:16px;
+  padding:16px;
+  margin:12px 0;
   box-shadow:0 10px 30px rgba(0,0,0,.4)
 }
 .alert{border-left:6px solid #ef4444}
 .warn{border-left:6px solid #facc15}
-.rank{border-left:6px solid #22c55e}
+
 .title{font-weight:700;margin-bottom:6px}
 .muted{opacity:.7;font-size:14px}
+.section{margin-top:20px}
 </style>
 </head>
 
@@ -79,7 +84,8 @@ function render(data){
   if(sel.options.length===1){
     data.sectores.forEach(s=>{
       const o=document.createElement("option");
-      o.value=s;o.text=s;sel.appendChild(o);
+      o.value=s;o.text=s;
+      sel.appendChild(o);
     });
   }
 
@@ -88,42 +94,63 @@ function render(data){
   <div class="card">
     <div class="title">Resumen (${data.resumen.dias} días)</div>
     Sector: ${data.resumen.sector}<br><br>
-    <b>Producto más donado:</b> ${data.mas_donado?.producto||"—"}<br>
-    <b>Producto más en RAG (eventos):</b> ${data.mas_rag_eventos?.producto||"—"}<br>
-    <b>Producto más en RAG (cantidad):</b> ${data.mas_rag_cantidad?.producto||"—"}
+    <b>Producto más donado:</b> ${data.mas_donado?.producto || "—"}<br>
+    <b>Producto más en RAG (eventos):</b> ${data.mas_rag_eventos?.producto || "—"}<br>
+    <b>Producto más en RAG (cantidad):</b> ${data.mas_rag_cantidad?.producto || "—"}
   </div>`;
 
-  // eventos
+  const alertas=[];
+  const advertencias=[];
+
   data.ranking.forEach(p=>{
-    const acumulado=Number(p.acumulado);
+    const cant=Number(p.acumulado);
     const umbral=10;
 
-    let clase="card";
-    if(acumulado>=umbral) clase+=" alert";
-    else if(acumulado>=umbral*0.8) clase+=" warn";
-
-    out.innerHTML+=`
-    <div class="${clase}">
-      <div class="title">${p.producto} (${p.sku})</div>
-      Evento máx: 1<br>
-      Acumulado: ${acumulado}
-    </div>`;
+    if(cant>=umbral){
+      alertas.push(p);
+    }else if(cant>=umbral*0.8){
+      advertencias.push(p);
+    }
   });
 
-  // ranking correcto
+  if(alertas.length){
+    out.innerHTML+=`<div class="section title">🔴 Alertas</div>`;
+    alertas.forEach(p=>{
+      out.innerHTML+=`
+      <div class="card alert">
+        <div class="title">${p.producto} (${p.sku})</div>
+        Evento máx: 1<br>
+        Acumulado: ${p.acumulado}
+      </div>`;
+    });
+  }
+
+  if(advertencias.length){
+    out.innerHTML+=`<div class="section title">🟡 Advertencias</div>`;
+    advertencias.forEach(p=>{
+      out.innerHTML+=`
+      <div class="card warn">
+        <div class="title">${p.producto} (${p.sku})</div>
+        Evento máx: 1<br>
+        Acumulado: ${p.acumulado}
+      </div>`;
+    });
+  }
+
+  // ranking
   const rankingOrdenado=[...data.ranking]
     .map(p=>({...p,acumulado:Number(p.acumulado)}))
     .sort((a,b)=>b.acumulado-a.acumulado);
 
   out.innerHTML+=`
-  <div class="card rank">
-    <div class="title">Ranking de impacto</div>
-    <div class="muted">Ordenado por cantidad total</div>
-  </div>`;
+  <div class="section title">Ranking de impacto</div>
+  <div class="muted">Ordenado por cantidad total</div>`;
 
   rankingOrdenado.forEach((p,i)=>{
     out.innerHTML+=`
-    <div class="card">${i+1}. ${p.producto} – ${p.acumulado}</div>`;
+    <div class="card">
+      ${i+1}. ${p.producto} – ${p.acumulado}
+    </div>`;
   });
 }
 </script>
