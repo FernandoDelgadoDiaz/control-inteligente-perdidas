@@ -1,114 +1,257 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Control Inteligente de Pérdidas</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Control Inteligente de Pérdidas</title>
 
-<style>
-*{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
-body{margin:0;background:#0b1220;color:#e5e7eb}
-header{padding:16px;background:#020617;border-bottom:1px solid #1e293b}
-h1{margin:0;font-size:20px}
-main{padding:16px;display:flex;flex-direction:column;gap:14px}
-select,button{
-  padding:10px;border-radius:8px;
-  background:#020617;color:#e5e7eb;border:1px solid #334155
-}
-button{cursor:pointer}
-button:hover{background:#1e293b}
-.panel{background:#020617;border:1px solid #1e293b;border-radius:12px;padding:14px}
-.alerta{border-left:5px solid #dc2626}
-.advertencia{border-left:5px solid #facc15}
-.item{margin-top:8px;padding:10px;border-radius:8px;background:#020617;border:1px solid #1e293b}
-small{color:#9ca3af}
-.error{background:#7f1d1d;padding:10px;border-radius:8px;border-left:5px solid red}
-</style>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #0f172a;
+      --border: #1e293b;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --red: #ef4444;
+      --yellow: #facc15;
+      --green: #22c55e;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: linear-gradient(180deg, #020617, #020617 30%, #020617);
+      color: var(--text);
+    }
+
+    header {
+      padding: 20px;
+      font-size: 20px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .container {
+      padding: 16px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    select, button {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    button {
+      cursor: pointer;
+      background: #111827;
+    }
+
+    button:hover {
+      background: #1f2937;
+    }
+
+    .error {
+      background: #450a0a;
+      border: 1px solid var(--red);
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      color: #fecaca;
+    }
+
+    .section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .alert {
+      border-left: 6px solid var(--red);
+    }
+
+    .warn {
+      border-left: 6px solid var(--yellow);
+    }
+
+    .item {
+      background: #020617;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .item strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
 </head>
 
 <body>
 
 <header>
-<h1>Control Inteligente de Pérdidas – RAG & Donaciones</h1>
+  Control Inteligente de Pérdidas – RAG & Donaciones
 </header>
 
-<main>
+<div class="container">
 
-<div class="panel">
-  <select id="dias">
-    <option value="7">Últimos 7 días</option>
-    <option value="14">Últimos 14 días</option>
-    <option value="30">Últimos 30 días</option>
-    <option value="60">Últimos 60 días</option>
-    <option value="90">Últimos 90 días</option>
-    <option value="180">Últimos 6 meses</option>
-  </select>
+  <div class="controls">
+    <select id="dias">
+      <option value="7">7 días</option>
+      <option value="14">14 días</option>
+      <option value="30">30 días</option>
+    </select>
 
-  <select id="sector">
-    <option value="ALL">Toda la sucursal</option>
-  </select>
+    <select id="sector">
+      <option value="ALL">Toda la sucursal</option>
+    </select>
 
-  <button onclick="generarReporte()">Generar reporte</button>
+    <button onclick="generarReporte()">Generar reporte</button>
+  </div>
+
+  <div id="error"></div>
+  <div id="resultado"></div>
+
 </div>
 
-<div id="resultado"></div>
-
-</main>
+<footer>
+  Control inteligente · Datos en tiempo real
+</footer>
 
 <script>
-/* ===== CONFIG PRODUCCIÓN ===== */
-const API_URL =
-"https://script.google.com/macros/s/AKfycby2zsqYco70CIqQ6Pqonw7ldxMF38_2gru9aCJJ3BwX/exec";
+  // ✅ URL FINAL SIN CORS (PRODUCCIÓN)
+  const API_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=REEMPLAZAR_POR_TU_KEY_REAL";
 
-/* ===== CARGA SECTORES ===== */
-async function cargarSectores(){
-  const res = await fetch(`${API_URL}?dias=7&sector=ALL`);
-  const data = await res.json();
-  if(data.sectores){
-    const sel = document.getElementById("sector");
-    data.sectores.forEach(s=>{
-      const o=document.createElement("option");
-      o.value=s;o.textContent=s;sel.appendChild(o);
+  async function cargarSectores() {
+    try {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+
+      const select = document.getElementById("sector");
+      data.sectores.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = s;
+        select.appendChild(opt);
+      });
+    } catch (e) {
+      mostrarError("No se pudieron cargar los sectores.");
+    }
+  }
+
+  async function generarReporte() {
+    limpiar();
+
+    const dias = document.getElementById("dias").value;
+    const sector = document.getElementById("sector").value;
+
+    try {
+      const res = await fetch(`${API_URL}&dias=${dias}&sector=${sector}`);
+      const data = await res.json();
+
+      if (data.error) {
+        mostrarError(data.error);
+        return;
+      }
+
+      renderSeccion("ALERTAS", data.alertas, "alert");
+      renderSeccion("ADVERTENCIAS", data.advertencias, "warn");
+      renderRanking(data);
+
+    } catch (e) {
+      mostrarError("Error real al generar reporte.");
+    }
+  }
+
+  function renderSeccion(titulo, items, clase) {
+    if (!items || items.length === 0) return;
+
+    const div = document.createElement("div");
+    div.className = `section ${clase}`;
+
+    div.innerHTML = `<div class="section-title">${titulo}</div>`;
+
+    items.forEach(i => {
+      div.innerHTML += `
+        <div class="item">
+          <strong>${i.producto} (${i.sku})</strong>
+          <div class="muted">${i.motivo}</div>
+          <div class="muted">Evento máx: ${i.cantidad_evento_max} ${i.unidad}</div>
+          <div class="muted">Acumulado período: ${i.cantidad_acumulada_periodo}</div>
+        </div>
+      `;
     });
+
+    document.getElementById("resultado").appendChild(div);
   }
-}
 
-/* ===== REPORTE ===== */
-async function generarReporte(){
-  const dias=document.getElementById("dias").value;
-  const sector=document.getElementById("sector").value;
-  const box=document.getElementById("resultado");
+  function renderRanking(data) {
+    const div = document.createElement("div");
+    div.className = "section";
 
-  box.innerHTML="<div class='panel'>Generando reporte…</div>";
+    div.innerHTML = `
+      <div class="section-title">Resumen adicional</div>
+      <div class="item">
+        <strong>Producto más frecuente</strong>
+        <div class="muted">${data.mas_frecuente?.producto || "-"}</div>
+      </div>
+      <div class="item">
+        <strong>Producto con más RAG</strong>
+        <div class="muted">${data.mas_rag?.producto || "-"}</div>
+      </div>
+    `;
 
-  try{
-    const res=await fetch(`${API_URL}?dias=${dias}&sector=${encodeURIComponent(sector)}`);
-    const d=await res.json();
-
-    if(d.error){box.innerHTML=`<div class='error'>${d.error}</div>`;return;}
-
-    let h=`<div class='panel'><b>${d.resumen.dias} días</b> · ${d.resumen.sector}<br>
-    🔴 Alertas: ${d.resumen.total_alertas} | 🟡 Advertencias: ${d.resumen.total_advertencias}</div>`;
-
-    if(d.alertas?.length){
-      h+=`<div class='panel alerta'><b>🔴 ALERTAS</b>`;
-      d.alertas.forEach(a=>h+=`<div class='item'><b>${a.producto}</b><br>${a.cantidad_evento_max} ${a.unidad}</div>`);
-      h+=`</div>`;
-    }
-
-    if(d.advertencias?.length){
-      h+=`<div class='panel advertencia'><b>🟡 ADVERTENCIAS</b>`;
-      d.advertencias.forEach(a=>h+=`<div class='item'><b>${a.producto}</b><br>${a.cantidad_evento_max} ${a.unidad}</div>`);
-      h+=`</div>`;
-    }
-
-    box.innerHTML=h;
-  }catch(e){
-    box.innerHTML="<div class='error'>Error real al generar reporte</div>";
+    document.getElementById("resultado").appendChild(div);
   }
-}
 
-cargarSectores();
+  function mostrarError(msg) {
+    document.getElementById("error").innerHTML =
+      `<div class="error">❌ ${msg}</div>`;
+  }
+
+  function limpiar() {
+    document.getElementById("resultado").innerHTML = "";
+    document.getElementById("error").innerHTML = "";
+  }
+
+  // Inicial
+  cargarSectores();
 </script>
 
 </body>
