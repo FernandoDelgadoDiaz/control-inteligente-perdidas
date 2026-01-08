@@ -1,31 +1,39 @@
 export async function handler(event) {
   try {
-    const dias = event.queryStringParameters?.dias || 7;
+    const dias = event.queryStringParameters?.dias || "7";
     const sector = event.queryStringParameters?.sector || "ALL";
 
+    // URL OFICIAL DEL GS DE ANÁLISIS (VALIDADA)
     const GOOGLE_SCRIPT_URL =
-      "https://script.google.com/macros/s/AKfycbxakcoust-d-geI214--f4NJy8C_VR0Dm5IYVbE_JRgHnMvE-wnZTSjQdxb3SzeDLICSQ/exec";
+      "https://script.google.com/macros/s/AKfycbybjXxMFFaopLSN8-duzT1dKLPnxH8rb-FmAiFS2-gFTdgcf0WWlPxbTWIm0b6NK9Fz/exec";
 
     const url = `${GOOGLE_SCRIPT_URL}?dias=${dias}&sector=${encodeURIComponent(sector)}`;
 
     const resp = await fetch(url);
-    if (!resp.ok) throw new Error("Error al consultar Google Script");
+    if (!resp.ok) {
+      throw new Error(`Error Google Script (${resp.status})`);
+    }
 
-    const data = await resp.json();
+    // NO parseamos acá: devolvemos tal cual
+    const body = await resp.text();
 
     return {
       statusCode: 200,
       headers: {
-        "Access-Control-Allow-Origin": "*",
         "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
       },
-      body: JSON.stringify(data),
+      body
     };
+
   } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      },
+      body: JSON.stringify({ error: err.message })
     };
   }
 }
-
