@@ -1,178 +1,180 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Control Inteligente de Pérdidas – RAG & Donaciones</title>
+  <meta charset="UTF-8" />
+  <title>Control Inteligente de Pérdidas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<style>
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
-  background:linear-gradient(180deg,#020617,#020617 40%,#020617);
-  color:#fff;
-}
-.container{max-width:720px;margin:auto;padding:20px}
-h1{font-size:22px;margin-bottom:20px}
-select,button{
-  width:100%;
-  padding:14px;
-  border-radius:12px;
-  border:none;
-  margin-bottom:12px;
-  font-size:16px;
-}
-button{
-  background:#3b82f6;
-  color:#fff;
-  font-weight:600;
-}
-.card{
-  background:rgba(255,255,255,.06);
-  border-radius:16px;
-  padding:16px;
-  margin-bottom:14px;
-}
-.badge-red{border-left:6px solid #ef4444}
-.badge-yellow{border-left:6px solid #facc15}
-.section-title{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin:20px 0 10px;
-  font-weight:700;
-}
-.rank-item{
-  background:rgba(255,255,255,.05);
-  padding:12px;
-  border-radius:12px;
-  margin-bottom:8px;
-}
-.small{opacity:.85;font-size:14px}
-</style>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 16px;
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    select {
+      padding: 6px;
+      font-size: 14px;
+    }
+
+    .box {
+      background: #fff;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+
+    .alerta {
+      background: #ffe5e5;
+      border-left: 6px solid #d93025;
+    }
+
+    .advertencia {
+      background: #fff4cc;
+      border-left: 6px solid #f9ab00;
+    }
+
+    .item {
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .ranking-item {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid #ddd;
+      padding: 6px 0;
+      font-size: 14px;
+    }
+
+    .small {
+      font-size: 13px;
+      color: #555;
+    }
+  </style>
 </head>
 
 <body>
-<div class="container">
-<h1>Control Inteligente de Pérdidas – RAG & Donaciones</h1>
 
-<select id="dias">
-  <option value="7">7 días</option>
-  <option value="14">14 días</option>
-  <option value="30">30 días</option>
-  <option value="60">60 días</option>
-</select>
+  <h1>📊 Control Inteligente de Pérdidas</h1>
 
-<select id="sector">
-  <option value="ALL">Toda la sucursal</option>
-</select>
+  <div class="controls">
+    <select id="dias">
+      <option value="7">Últimos 7 días</option>
+      <option value="14">Últimos 14 días</option>
+      <option value="30">Últimos 30 días</option>
+      <option value="60">Últimos 60 días</option>
+    </select>
 
-<button onclick="generar()">Generar reporte</button>
+    <select id="sector">
+      <option value="ALL">Toda la sucursal</option>
+    </select>
+  </div>
 
-<div id="resultado"></div>
-</div>
+  <div id="resumen" class="box"></div>
+
+  <div id="alertas" class="box alerta"></div>
+
+  <div id="advertencias" class="box advertencia"></div>
+
+  <div id="ranking" class="box"></div>
 
 <script>
-const API_URL = "https://controldeperdidas.netlify.app/.netlify/functions/getEventos";
+  const API_URL = "https://script.google.com/macros/s/AKfycbybjXxMFFaopLSN8-duzT1dKLPnxH8rb-FmAiFS2-gFTdgcf0WWlPxbTWIm0b6NK9Fz/exec";
 
-async function generar(){
-  const dias = document.getElementById("dias").value;
-  const sector = document.getElementById("sector").value;
-  const cont = document.getElementById("resultado");
-  cont.innerHTML = "";
+  const diasSelect = document.getElementById("dias");
+  const sectorSelect = document.getElementById("sector");
 
-  const res = await fetch(`${API_URL}?dias=${dias}&sector=${sector}`);
-  const data = await res.json();
+  diasSelect.addEventListener("change", cargarDatos);
+  sectorSelect.addEventListener("change", cargarDatos);
 
-  renderResumen(data, dias, sector);
-  renderAlertas(data);
-  renderAdvertencias(data);
-  renderRanking(data);
-  cargarSectores(data);
-}
+  function cargarDatos() {
+    const dias = diasSelect.value;
+    const sector = sectorSelect.value;
 
-function renderResumen(data,dias,sector){
-  const r = data.resumen || {};
-  const div = document.createElement("div");
-  div.className="card";
-  div.innerHTML=`
-    <strong>Resumen (${dias} días)</strong><br>
-    Sector: ${sector==="ALL"?"Toda la sucursal":sector}<br><br>
+    fetch(`${API_URL}?dias=${dias}&sector=${sector}`)
+      .then(r => r.json())
+      .then(render)
+      .catch(err => {
+        document.getElementById("resumen").innerHTML =
+          `<b>Error:</b> ${err.message}`;
+      });
+  }
 
-    <strong>Producto más donado:</strong><br>
-    ${data.mas_donado ? 
-      `${data.mas_donado.producto} (SKU ${data.mas_donado.sku}) – ${data.mas_donado.acumulado}` 
-      : "—"}<br><br>
+  function render(data) {
+    // Resumen
+    document.getElementById("resumen").innerHTML = `
+      <b>Período:</b> ${data.resumen.dias} días<br>
+      <b>Sector:</b> ${data.resumen.sector}<br><br>
+      <b>Más donado:</b> ${formatoItem(data.mas_donado)}<br>
+      <b>RAG con más cantidad:</b> ${formatoItem(data.mas_rag_cantidad)}<br>
+      <b>RAG con más eventos:</b> ${formatoItemEventos(data.mas_rag_eventos)}
+    `;
 
-    <strong>Producto más en RAG (eventos):</strong><br>
-    ${data.mas_rag_eventos ?
-      `${data.mas_rag_eventos.producto} (SKU ${data.mas_rag_eventos.sku}) – ${data.mas_rag_eventos.eventos} evento(s)`
-      : "—"}<br><br>
+    // Alertas
+    document.getElementById("alertas").innerHTML =
+      `<h3>🔴 Alertas</h3>` +
+      (data.alertas.length
+        ? data.alertas.map(p => `<div class="item">${formatoProducto(p)}</div>`).join("")
+        : "<div class='small'>Sin alertas</div>");
 
-    <strong>Producto más en RAG (cantidad):</strong><br>
-    ${data.mas_rag_cantidad ?
-      `${data.mas_rag_cantidad.producto} (SKU ${data.mas_rag_cantidad.sku}) – ${data.mas_rag_cantidad.acumulado}`
-      : "—"}
-  `;
-  resultado.appendChild(div);
-}
+    // Advertencias
+    document.getElementById("advertencias").innerHTML =
+      `<h3>🟡 Advertencias</h3>` +
+      (data.advertencias.length
+        ? data.advertencias.map(p => `<div class="item">${formatoProducto(p)}</div>`).join("")
+        : "<div class='small'>Sin advertencias</div>");
 
-function renderAlertas(data){
-  if(!data.ranking) return;
-  const alertas = data.ranking.filter(p=>p.acumulado>10);
-  if(alertas.length===0) return;
+    // Ranking
+    document.getElementById("ranking").innerHTML =
+      `<h3>📈 Ranking por cantidad acumulada</h3>` +
+      data.ranking.map(p =>
+        `<div class="ranking-item">
+          <span>${p.producto} (${p.marca})</span>
+          <span><b>${p.acumulado} ${p.unidad}</b></span>
+        </div>`
+      ).join("");
 
-  resultado.innerHTML+=`<div class="section-title">🔴 Alertas</div>`;
-  alertas.forEach(p=>{
-    resultado.innerHTML+=`
-      <div class="card badge-red">
-        <strong>${p.producto}</strong><br>
-        SKU: ${p.sku}<br>
-        Evento máx: 1<br>
-        Acumulado: ${p.acumulado}
-      </div>`;
-  });
-}
+    // Sectores
+    if (sectorSelect.options.length === 1) {
+      data.sectores.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = s;
+        sectorSelect.appendChild(opt);
+      });
+    }
+  }
 
-function renderAdvertencias(data){
-  if(!data.ranking) return;
-  const adv = data.ranking.filter(p=>p.acumulado<=10);
-  if(adv.length===0) return;
+  function formatoProducto(p) {
+    return `${p.producto} (${p.marca}) → <b>${p.acumulado} ${p.unidad}</b>`;
+  }
 
-  resultado.innerHTML+=`<div class="section-title">🟡 Advertencias</div>`;
-  adv.forEach(p=>{
-    resultado.innerHTML+=`
-      <div class="card badge-yellow">
-        <strong>${p.producto}</strong><br>
-        SKU: ${p.sku}<br>
-        Evento máx: 1<br>
-        Acumulado: ${p.acumulado}
-      </div>`;
-  });
-}
+  function formatoItem(p) {
+    if (!p) return "—";
+    return `${p.producto} (${p.marca}) → ${p.acumulado} ${p.unidad}`;
+  }
 
-function renderRanking(data){
-  if(!data.ranking || data.ranking.length===0) return;
-  resultado.innerHTML+=`
-    <div class="section-title">📊 Ranking de impacto</div>
-    <div class="small">Ordenado por cantidad total</div>`;
-  data.ranking.forEach((p,i)=>{
-    resultado.innerHTML+=`
-      <div class="rank-item">
-        ${i+1}. ${p.producto} – ${p.acumulado}
-      </div>`;
-  });
-}
+  function formatoItemEventos(p) {
+    if (!p) return "—";
+    return `${p.producto} (${p.marca}) → ${p.eventos} eventos`;
+  }
 
-function cargarSectores(data){
-  if(!data.sectores) return;
-  const sel = document.getElementById("sector");
-  sel.innerHTML=`<option value="ALL">Toda la sucursal</option>`;
-  data.sectores.forEach(s=>{
-    sel.innerHTML+=`<option value="${s}">${s}</option>`;
-  });
-}
+  // Carga inicial
+  cargarDatos();
 </script>
+
 </body>
 </html>
-
