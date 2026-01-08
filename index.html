@@ -12,45 +12,37 @@
       margin: 0;
       padding: 16px;
     }
-
     h1 {
       margin: 0 0 12px 0;
     }
-
     .controls {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
       margin-bottom: 16px;
     }
-
     select {
       padding: 6px;
       font-size: 14px;
     }
-
     .box {
       background: #ffffff;
       border-radius: 6px;
       padding: 12px;
       margin-bottom: 16px;
     }
-
     .alerta {
       background: #ffe5e5;
       border-left: 6px solid #d93025;
     }
-
     .advertencia {
       background: #fff4cc;
       border-left: 6px solid #f9ab00;
     }
-
     .item {
       margin-bottom: 6px;
       font-size: 14px;
     }
-
     .ranking-item {
       display: flex;
       justify-content: space-between;
@@ -58,7 +50,6 @@
       padding: 6px 0;
       font-size: 14px;
     }
-
     .small {
       font-size: 13px;
       color: #555;
@@ -68,32 +59,29 @@
 
 <body>
 
-  <h1>📊 Control Inteligente de Pérdidas</h1>
+<h1>📊 Control Inteligente de Pérdidas</h1>
 
-  <div class="controls">
-    <select id="dias">
-      <option value="7">Últimos 7 días</option>
-      <option value="14">Últimos 14 días</option>
-      <option value="30">Últimos 30 días</option>
-      <option value="60">Últimos 60 días</option>
-    </select>
+<div class="controls">
+  <select id="dias">
+    <option value="7">Últimos 7 días</option>
+    <option value="14">Últimos 14 días</option>
+    <option value="30">Últimos 30 días</option>
+    <option value="60">Últimos 60 días</option>
+  </select>
 
-    <select id="sector">
-      <option value="ALL">Toda la sucursal</option>
-    </select>
-  </div>
+  <select id="sector">
+    <option value="ALL">Toda la sucursal</option>
+  </select>
+</div>
 
-  <div id="resumen" class="box"></div>
-  <div id="alertas" class="box alerta"></div>
-  <div id="advertencias" class="box advertencia"></div>
-  <div id="ranking" class="box"></div>
+<div id="resumen" class="box"></div>
+<div id="alertas" class="box alerta"></div>
+<div id="advertencias" class="box advertencia"></div>
+<div id="ranking" class="box"></div>
 
 <script>
-  /* ================================
-     URL OFICIAL DEL GS DE ANÁLISIS
-     ================================ */
-  const API_URL =
-    "https://script.google.com/macros/s/AKfycbybjXxMFFaopLSN8-duzT1dKLPnxH8rb-FmAiFS2-gFTdgcf0WWlPxbTWIm0b6NK9Fz/exec";
+  // IMPORTANTE: usamos Netlify Functions (proxy)
+  const API_URL = "/.netlify/functions/getEventos";
 
   const diasSelect = document.getElementById("dias");
   const sectorSelect = document.getElementById("sector");
@@ -115,30 +103,30 @@
   }
 
   function render(data) {
-    /* ===== Resumen ===== */
+    // Resumen
     document.getElementById("resumen").innerHTML = `
       <b>Período:</b> ${data.resumen.dias} días<br>
       <b>Sector:</b> ${data.resumen.sector}<br><br>
-      <b>Más donado:</b> ${formatoItem(data.mas_donado)}<br>
-      <b>RAG con más cantidad:</b> ${formatoItem(data.mas_rag_cantidad)}<br>
-      <b>RAG con más eventos:</b> ${formatoItemEventos(data.mas_rag_eventos)}
+      <b>Más donado:</b> ${fmtItem(data.mas_donado)}<br>
+      <b>RAG con más cantidad:</b> ${fmtItem(data.mas_rag_cantidad)}<br>
+      <b>RAG con más eventos:</b> ${fmtEventos(data.mas_rag_eventos)}
     `;
 
-    /* ===== Alertas ===== */
+    // Alertas
     document.getElementById("alertas").innerHTML =
       `<h3>🔴 Alertas</h3>` +
       (data.alertas.length
-        ? data.alertas.map(p => `<div class="item">${formatoProducto(p)}</div>`).join("")
+        ? data.alertas.map(p => `<div class="item">${fmtProd(p)}</div>`).join("")
         : "<div class='small'>Sin alertas</div>");
 
-    /* ===== Advertencias ===== */
+    // Advertencias
     document.getElementById("advertencias").innerHTML =
       `<h3>🟡 Advertencias</h3>` +
       (data.advertencias.length
-        ? data.advertencias.map(p => `<div class="item">${formatoProducto(p)}</div>`).join("")
+        ? data.advertencias.map(p => `<div class="item">${fmtProd(p)}</div>`).join("")
         : "<div class='small'>Sin advertencias</div>");
 
-    /* ===== Ranking ===== */
+    // Ranking
     document.getElementById("ranking").innerHTML =
       `<h3>📈 Ranking por cantidad acumulada</h3>` +
       data.ranking.map(p =>
@@ -148,7 +136,7 @@
         </div>`
       ).join("");
 
-    /* ===== Sectores ===== */
+    // Sectores (solo la primera vez)
     if (sectorSelect.options.length === 1) {
       data.sectores.forEach(s => {
         const opt = document.createElement("option");
@@ -159,21 +147,19 @@
     }
   }
 
-  function formatoProducto(p) {
+  function fmtProd(p) {
     return `${p.producto} (${p.marca}) → <b>${p.acumulado} ${p.unidad}</b>`;
   }
-
-  function formatoItem(p) {
+  function fmtItem(p) {
     if (!p) return "—";
     return `${p.producto} (${p.marca}) → ${p.acumulado} ${p.unidad}`;
   }
-
-  function formatoItemEventos(p) {
+  function fmtEventos(p) {
     if (!p) return "—";
     return `${p.producto} (${p.marca}) → ${p.eventos} eventos`;
   }
 
-  /* ===== Carga inicial ===== */
+  // Carga inicial
   cargarDatos();
 </script>
 
