@@ -14,7 +14,7 @@
     }
 
     h1 {
-      margin-top: 0;
+      margin: 0 0 12px 0;
     }
 
     .controls {
@@ -30,7 +30,7 @@
     }
 
     .box {
-      background: #fff;
+      background: #ffffff;
       border-radius: 6px;
       padding: 12px;
       margin-bottom: 16px;
@@ -84,15 +84,16 @@
   </div>
 
   <div id="resumen" class="box"></div>
-
   <div id="alertas" class="box alerta"></div>
-
   <div id="advertencias" class="box advertencia"></div>
-
   <div id="ranking" class="box"></div>
 
 <script>
-  const API_URL = "https://script.google.com/macros/s/AKfycbybjXxMFFaopLSN8-duzT1dKLPnxH8rb-FmAiFS2-gFTdgcf0WWlPxbTWIm0b6NK9Fz/exec";
+  /* ================================
+     URL OFICIAL DEL GS DE ANÁLISIS
+     ================================ */
+  const API_URL =
+    "https://script.google.com/macros/s/AKfycbybjXxMFFaopLSN8-duzT1dKLPnxH8rb-FmAiFS2-gFTdgcf0WWlPxbTWIm0b6NK9Fz/exec";
 
   const diasSelect = document.getElementById("dias");
   const sectorSelect = document.getElementById("sector");
@@ -105,16 +106,16 @@
     const sector = sectorSelect.value;
 
     fetch(`${API_URL}?dias=${dias}&sector=${sector}`)
-      .then(r => r.json())
-      .then(render)
+      .then(res => res.json())
+      .then(data => render(data))
       .catch(err => {
         document.getElementById("resumen").innerHTML =
-          `<b>Error:</b> ${err.message}`;
+          `<b>Error al cargar datos:</b> ${err}`;
       });
   }
 
   function render(data) {
-    // Resumen
+    /* ===== Resumen ===== */
     document.getElementById("resumen").innerHTML = `
       <b>Período:</b> ${data.resumen.dias} días<br>
       <b>Sector:</b> ${data.resumen.sector}<br><br>
@@ -123,21 +124,21 @@
       <b>RAG con más eventos:</b> ${formatoItemEventos(data.mas_rag_eventos)}
     `;
 
-    // Alertas
+    /* ===== Alertas ===== */
     document.getElementById("alertas").innerHTML =
       `<h3>🔴 Alertas</h3>` +
       (data.alertas.length
         ? data.alertas.map(p => `<div class="item">${formatoProducto(p)}</div>`).join("")
         : "<div class='small'>Sin alertas</div>");
 
-    // Advertencias
+    /* ===== Advertencias ===== */
     document.getElementById("advertencias").innerHTML =
       `<h3>🟡 Advertencias</h3>` +
       (data.advertencias.length
         ? data.advertencias.map(p => `<div class="item">${formatoProducto(p)}</div>`).join("")
         : "<div class='small'>Sin advertencias</div>");
 
-    // Ranking
+    /* ===== Ranking ===== */
     document.getElementById("ranking").innerHTML =
       `<h3>📈 Ranking por cantidad acumulada</h3>` +
       data.ranking.map(p =>
@@ -147,7 +148,7 @@
         </div>`
       ).join("");
 
-    // Sectores
+    /* ===== Sectores ===== */
     if (sectorSelect.options.length === 1) {
       data.sectores.forEach(s => {
         const opt = document.createElement("option");
@@ -172,7 +173,7 @@
     return `${p.producto} (${p.marca}) → ${p.eventos} eventos`;
   }
 
-  // Carga inicial
+  /* ===== Carga inicial ===== */
   cargarDatos();
 </script>
 
